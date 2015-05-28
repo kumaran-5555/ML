@@ -1,7 +1,7 @@
 
 import numpy
 
-
+# test commenting
 class GiniImpurity:    
     def __init__(self, start, end, n_classes, label_y, sample_weight_y, samples):
         self.start = start
