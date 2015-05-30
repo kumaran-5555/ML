@@ -87,21 +87,48 @@ class GiniImpurity:
         #print(self.curr_pos, imp)
         return imp
 
+    def node_value(self):
+        node_val = [None] * self.n_classes
+        for i in range(self.n_classes):
+            node_val[i] = self.label_count[i]
+        return node_val
+
+
 
 class SplitRecord:
-    def __init__(self):
-        self.start = None
-        self.end = None
+    def __init__(self, start, end, parent_id, total_weight):
+        self.start = start
+        self.end = end
         self.value = None
+        self.position = None
         self.impurity = None
         self.left_impurity = None
         self.right_impurity = None
         self.improvement = None
         self.feature_idx = None
+        self.node_count = end-start
+        self.node_weight = total_weight
+        self.node_count_left = None
+        self.node_count_right = None
+        self.node_weight_left = None
+        self.node_weight_right = None
+        self.parent_id = parent_id
+        self.leaf_value = [None]
+
+        
+    def __str__(self):
+        return ("start %d|end %d|value %.3f|position %d|impurity %.3f|left impurity %.3f|\
+        right impurity %.3f|improvement %.3f|feature %d|node count %d|node weight %d|\
+        node count left %d|node count right %d|node weight left %d|node weight right %d"%\
+            (self.start, self.end, self.value, self.position, self.impurity, self.left_impurity, \
+           self.right_impurity, self.improvement, self.feature_idx, self.node_count, self.node_weight,
+             self.node_count_left, self.node_count_right, self.node_weight_left, self.node_weight_right))
+
+
 
 class Splitter:
     def __init__(self, start, end, n_classes, label_y, data_x, sample_weight_y, samples, total_training_weight, seed,\
-        min_samples_leaf, min_weight_leaf):
+        min_samples_leaf, min_weight_leaf, split_rec):
         '''
         initialize for each node that has to be split, use split method to figure our best split for this node
         returns SplitRecord
@@ -120,9 +147,6 @@ class Splitter:
         self.min_samples_leaf = min_samples_leaf
         self.min_weight_leaf = min_weight_leaf
 
-
-
-
     def split(self):
         '''
         tries each features for split and return best one with split value
@@ -131,7 +155,7 @@ class Splitter:
 
         f_i = [i for i in range(self.n_features)]
 
-        split_rec = SplitRecord()
+        #split_rec = SplitRecord()
         split_rec.start = self.start
         split_rec.end = self.end
         
@@ -167,6 +191,13 @@ class Splitter:
                     split_rec.impurity = gini.impurity()
                     split_rec.left_impurity,split_rec.right_impurity = gini.child_impurity()
                     split_rec.value = best_v
+                    split_rec.position = self.start + i
+                    split_rec.node_weight = gini.total_weight
+                    split_rec.node_weight_left = gini.total_left_weight
+                    split_rec.node_weight_right = gini.total_right_weight
+                    split_rec.node_val = gini.node_value()
+
+
                     
         s = self.start
         e = self.end
@@ -182,32 +213,61 @@ class Splitter:
                 self.samples[e] = self.samples[s]
                 self.samples[s] = tmp
 
-        
-
         return split_rec
         #return best_improvement,best_v,best_f
 
+def TreeBuilder():
+
+    f = open("E:\scikit-learn-master\sklearn\datasets\data\iris.csv",'r', encoding='utf-8')
+
+    dim_x,dim_y = map(int,str(f.readline()).split(',')[:2])
+    sample_weight_y =  numpy.ones(dim_x)
+
+
+    data = numpy.empty((dim_x,dim_y))
+    label = numpy.empty(dim_x)
+    samples = numpy.empty(dim_x)
+    min_samples_split =  2
+    min_samples_leaf = 1
+    min_weight_leaf = 1
+    n_classes = 3
+
+    #next(f)
+    # node id to split record
+    tree = {}
+
+    for i,d in enumerate(f):
+        data[i] = numpy.asarray(d.split(',')[:-1], dtype=numpy.float)
+        label[i] = numpy.asarray(d.split(',')[-1], dtype=numpy.int)
+        samples[i] = i
+    # stack record: start, end, node_id, parent_id
+    node_count = 0
+    root_rec = SplitRecord(0, dim_x, None, sum(sample_weight_y))
+    stack = [root_rec]
+
+    while len(stack):
+        record = stack.pop()
+        # check if this node is split-able
+        is_leaf = True
+        if record.node_count >= (min_samples_leaf * 2) or \
+            record.node_count >= min_samples_split:
+            # can split
+            is_leaf = False
+
+        if not is_leaf:
+            splitter = Splitter(record.start, record.end,  n_classes, label, data, sample_weight_y, samples, sum(sample_weight_y), 1, min_samples_leaf, min_weight_leaft, record)
+
+            pass
+        else:
+            pass
 
 
 
-f = open("E:\scikit-learn-master\sklearn\datasets\data\iris.csv",'r', encoding='utf-8')
 
-dim_x,dim_y = map(int,str(f.readline()).split(',')[:2])
-sample_weight_y =  numpy.ones(dim_x)
+        
 
-
-data = numpy.empty((dim_x,dim_y))
-label = numpy.empty(dim_x)
-samples = numpy.empty(dim_x)
-#next(f)
-
-for i,d in enumerate(f):
-    data[i] = numpy.asarray(d.split(',')[:-1], dtype=numpy.float)
-    label[i] = numpy.asarray(d.split(',')[-1], dtype=numpy.int)
-    samples[i] = i
-
-s = Splitter(0, dim_x, 3, label, data, sample_weight_y, samples, dim_x, 1, 1, 1)
-print(s.split())
+    s = Splitter(0, dim_x, 3, label, data, sample_weight_y, samples, dim_x, 1, 1, 1)
+    print(s.split())
 
 
 
