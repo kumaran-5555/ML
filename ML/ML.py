@@ -96,7 +96,7 @@ class GiniImpurity:
 
 
 class SplitRecord:
-    def __init__(self, start, end, parent_id, total_weight):
+    def __init__(self, start, end, node_id, total_weight):
         self.start = start
         self.end = end
         self.value = None
@@ -112,19 +112,33 @@ class SplitRecord:
         self.node_count_right = None
         self.node_weight_left = None
         self.node_weight_right = None
-        self.parent_id = parent_id
-        self.leaf_value = [None]
+        self.node_id = node_id
+        self.leaf_value = None
+        self.left_id = None
+        self.right_id = None
 
         
     def __str__(self):
-        return ("start %d|end %d|value %.3f|position %d|impurity %.3f|left impurity %.3f|\
-        right impurity %.3f|improvement %.3f|feature %d|node count %d|node weight %d|\
-        node count left %d|node count right %d|node weight left %d|node weight right %d"%\
+        return ("start %d|end %d node id %d"%(self.start, self.end, self.node_id))
+        '''
+        return ("start {}|end {]|value {}|position {}|impurity {}|left impurity {}|\
+        right impurity {}|improvement {}|feature {}|node count {}|node weight {}|\
+        node weight left {}|node weight right {}|node id {}|left id {}|right id {}"%\
             (self.start, self.end, self.value, self.position, self.impurity, self.left_impurity, \
            self.right_impurity, self.improvement, self.feature_idx, self.node_count, self.node_weight,
-             self.node_count_left, self.node_count_right, self.node_weight_left, self.node_weight_right))
+             self.node_weight_left, self.node_weight_right,\
+                 self.node_id, self.left_id, self.right_id))
 
+        
+        return ("start %d|end %d|value %.3f|position %d|impurity %.3f|left impurity %.3f|\
+        right impurity %.3f|improvement %.3f|feature %d|node count %d|node weight %d|\
+        node weight left %d|node weight right %d|node id %d|left id %d|right id %d"%\
+            (self.start, self.end, self.value, self.position, self.impurity, self.left_impurity, \
+           self.right_impurity, self.improvement, self.feature_idx, self.node_count, self.node_weight,
+             self.node_weight_left, self.node_weight_right,\
+                 self.node_id, self.left_id, self.right_id))
 
+        '''
 
 class Splitter:
     def __init__(self, start, end, n_classes, label_y, data_x, sample_weight_y, samples, total_training_weight, seed,\
@@ -146,6 +160,7 @@ class Splitter:
         self.n_samples = self.end-self.start
         self.min_samples_leaf = min_samples_leaf
         self.min_weight_leaf = min_weight_leaf
+        self.split_rec = split_rec
 
     def split(self):
         '''
@@ -156,8 +171,8 @@ class Splitter:
         f_i = [i for i in range(self.n_features)]
 
         #split_rec = SplitRecord()
-        split_rec.start = self.start
-        split_rec.end = self.end
+        self.split_rec.start = self.start
+        self.split_rec.end = self.end
         
         '''
         going to use all features, so no need to randomize the pick
@@ -170,9 +185,14 @@ class Splitter:
         best_v = None
         best_f = None
         for f in f_i:
-            x_i = self.data_x[self.start:self.end, f]
-            sorted_samples = numpy.argsort(x_i) + self.start
+            x_i = self.data_x[:, f]
+            sorted_samples = numpy.argsort(x_i[self.start:self.end]) + self.start
             gini = GiniImpurity(0, self.n_samples, self.n_classes, self.label_y, self.sample_weight_y, sorted_samples, self.total_training_weight)
+            # is node clean enough
+            if gini.impurity() < 0.0000007:
+                self.split_rec.impurity = gini.impurity()
+                self.split_rec.node_val = gini.node_value()
+                return self.split_rec
             
             for i in range(1, self.n_samples):
                 gini.update(i)
@@ -182,20 +202,20 @@ class Splitter:
                     continue
 
 
-                if best_improvement < gini.improvement():
+                if best_improvement <= gini.improvement():
                     best_improvement = gini.improvement()
                     best_v = (x_i[sorted_samples[i-1]] + x_i[sorted_samples[i]]) / 2
                     best_f = f
-
-                    split_rec.feature_idx = f
-                    split_rec.impurity = gini.impurity()
-                    split_rec.left_impurity,split_rec.right_impurity = gini.child_impurity()
-                    split_rec.value = best_v
-                    split_rec.position = self.start + i
-                    split_rec.node_weight = gini.total_weight
-                    split_rec.node_weight_left = gini.total_left_weight
-                    split_rec.node_weight_right = gini.total_right_weight
-                    split_rec.node_val = gini.node_value()
+                    self.split_rec.improvement = best_improvement
+                    self.split_rec.feature_idx = f
+                    self.split_rec.impurity = gini.impurity()
+                    self.split_rec.left_impurity,self.split_rec.right_impurity = gini.child_impurity()
+                    self.split_rec.value = best_v
+                    self.split_rec.position = self.start + i
+                    self.split_rec.node_weight = gini.total_weight
+                    self.split_rec.node_weight_left = gini.total_left_weight
+                    self.split_rec.node_weight_right = gini.total_right_weight
+                    self.split_rec.node_val = gini.node_value()
 
 
                     
@@ -213,7 +233,7 @@ class Splitter:
                 self.samples[e] = self.samples[s]
                 self.samples[s] = tmp
 
-        return split_rec
+        return self.split_rec
         #return best_improvement,best_v,best_f
 
 def TreeBuilder():
@@ -240,9 +260,9 @@ def TreeBuilder():
         data[i] = numpy.asarray(d.split(',')[:-1], dtype=numpy.float)
         label[i] = numpy.asarray(d.split(',')[-1], dtype=numpy.int)
         samples[i] = i
-    # stack record: start, end, node_id, parent_id
-    node_count = 0
-    root_rec = SplitRecord(0, dim_x, None, sum(sample_weight_y))
+    
+    id = 0
+    root_rec = SplitRecord(0, dim_x, id, sum(sample_weight_y))
     stack = [root_rec]
 
     while len(stack):
@@ -253,24 +273,34 @@ def TreeBuilder():
             record.node_count >= min_samples_split:
             # can split
             is_leaf = False
+        if not is_leaf:
+            splitter = Splitter(record.start, record.end,  n_classes, label, data, sample_weight_y,\
+                samples, sum(sample_weight_y), 1, min_samples_leaf, min_weight_leaf, record)
+            splitter.split()
+            is_leaf = not record.position
 
         if not is_leaf:
-            splitter = Splitter(record.start, record.end,  n_classes, label, data, sample_weight_y, samples, sum(sample_weight_y), 1, min_samples_leaf, min_weight_leaft, record)
+            
+            left = SplitRecord(record.start, record.position, id+1, record.node_weight_left)
+            right = SplitRecord(record.position, record.end, id+2, record.node_weight_right)
+            record.left_id = id + 1
+            record.right_id = id + 2
+            tree[record.node_id] = record
+            stack.append(left)
+            stack.append(right)
+            id += 2
 
-            pass
         else:
-            pass
+            tree[record.node_id] = record
+            continue
+    print(tree)
+    for i in range(id):
+        print(tree[i])
 
 
 
-
-        
-
-    s = Splitter(0, dim_x, 3, label, data, sample_weight_y, samples, dim_x, 1, 1, 1)
-    print(s.split())
-
-
-
+if __name__ == '__main__':
+    TreeBuilder()
 
 
 
