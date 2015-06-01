@@ -184,9 +184,13 @@ class Splitter:
         best_improvement = float('-inf')
         best_v = None
         best_f = None
+        x_i = numpy.empty(self.end-self.start)
+        sample_i = numpy.empty(self.end-self.start)
         for f in f_i:
-            x_i = self.data_x[:, f]
-            sorted_samples = numpy.argsort(x_i[self.start:self.end]) + self.start
+            for i in range(self.start,self.end):
+                x_i[i-self.start] = self.data_x[self.samples[i], f]
+                sample_i[i-self.start] = self.samples[i]
+            sorted_samples = [sample_i[i] for i in numpy.argsort(x_i)]
             gini = GiniImpurity(0, self.n_samples, self.n_classes, self.label_y, self.sample_weight_y, sorted_samples, self.total_training_weight)
             # is node clean enough
             if gini.impurity() < 0.0000007:
@@ -204,7 +208,7 @@ class Splitter:
 
                 if best_improvement <= gini.improvement():
                     best_improvement = gini.improvement()
-                    best_v = (x_i[sorted_samples[i-1]] + x_i[sorted_samples[i]]) / 2
+                    best_v = (self.data_x[sorted_samples[i-1],f] + self.data_x[sorted_samples[i],f]) / 2
                     best_f = f
                     self.split_rec.improvement = best_improvement
                     self.split_rec.feature_idx = f
@@ -222,7 +226,7 @@ class Splitter:
         s = self.start
         e = self.end
         while s < e:             
-            if self.data_x[s, best_f] <= best_v:
+            if self.data_x[self.samples[s], best_f] <= best_v:
                 # on the right side
                 s += 1
                 continue
@@ -238,14 +242,14 @@ class Splitter:
 
 def TreeBuilder():
 
-    f = open("E:\scikit-learn-master\sklearn\datasets\data\iris.csv",'r', encoding='utf-8')
+    f = open("C:\Program Files (x86)\WinPython-64bit-3.4.3.3\python-3.4.3.amd64\Lib\site-packages\sklearn\datasets\data\\iris2.csv",'r', encoding='utf-8')
 
     dim_x,dim_y = map(int,str(f.readline()).split(',')[:2])
     sample_weight_y =  numpy.ones(dim_x)
 
 
     data = numpy.empty((dim_x,dim_y))
-    label = numpy.empty(dim_x)
+    label = numpy.empty(dim_x) 
     samples = numpy.empty(dim_x)
     min_samples_split =  2
     min_samples_leaf = 1
@@ -286,8 +290,11 @@ def TreeBuilder():
             record.left_id = id + 1
             record.right_id = id + 2
             tree[record.node_id] = record
-            stack.append(left)
+            
             stack.append(right)
+            stack.append(left)
+
+            samples = numpy.copy(splitter.samples)
             id += 2
 
         else:
