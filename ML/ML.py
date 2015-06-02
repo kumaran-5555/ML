@@ -1,7 +1,5 @@
-
 import numpy
 import random
-
 
 
 # test commenting
@@ -116,6 +114,7 @@ class SplitRecord:
         self.leaf_value = None
         self.left_id = None
         self.right_id = None
+        
 
         
     def __str__(self):
@@ -128,7 +127,6 @@ class SplitRecord:
            self.right_impurity, self.improvement, self.feature_idx, self.node_count, self.node_weight,
              self.node_weight_left, self.node_weight_right,\
                  self.node_id, self.left_id, self.right_id))
-
         
         return ("start %d|end %d|value %.3f|position %d|impurity %.3f|left impurity %.3f|\
         right impurity %.3f|improvement %.3f|feature %d|node count %d|node weight %d|\
@@ -137,7 +135,6 @@ class SplitRecord:
            self.right_impurity, self.improvement, self.feature_idx, self.node_count, self.node_weight,
              self.node_weight_left, self.node_weight_right,\
                  self.node_id, self.left_id, self.right_id))
-
         '''
 
 class Splitter:
@@ -161,6 +158,7 @@ class Splitter:
         self.min_samples_leaf = min_samples_leaf
         self.min_weight_leaf = min_weight_leaf
         self.split_rec = split_rec
+        self.threshold = 1e-7
 
     def split(self):
         '''
@@ -184,6 +182,7 @@ class Splitter:
         best_improvement = float('-inf')
         best_v = None
         best_f = None
+        best_i = None
         x_i = numpy.empty(self.end-self.start)
         sample_i = numpy.empty(self.end-self.start)
         for f in f_i:
@@ -191,6 +190,8 @@ class Splitter:
                 x_i[i-self.start] = self.data_x[self.samples[i], f]
                 sample_i[i-self.start] = self.samples[i]
             sorted_samples = [sample_i[i] for i in numpy.argsort(x_i)]
+            x_i = numpy.sort(x_i)
+
             gini = GiniImpurity(0, self.n_samples, self.n_classes, self.label_y, self.sample_weight_y, sorted_samples, self.total_training_weight)
             # is node clean enough
             if gini.impurity() < 0.0000007:
@@ -199,6 +200,11 @@ class Splitter:
                 return self.split_rec
             
             for i in range(1, self.n_samples):
+                
+                # no much movement in feature value
+                if x_i[i] - x_i[i-1] <= self.threshold:
+                    continue
+
                 gini.update(i)
                 if i < self.min_samples_leaf or self.n_samples < self.min_samples_leaf or \
                     gini.total_left_weight < self.min_weight_leaf or gini.total_right_weight < self.min_weight_leaf:
@@ -206,9 +212,10 @@ class Splitter:
                     continue
 
 
-                if best_improvement <= gini.improvement():
+                if best_improvement < gini.improvement():
                     best_improvement = gini.improvement()
-                    best_v = (self.data_x[sorted_samples[i-1],f] + self.data_x[sorted_samples[i],f]) / 2
+                    best_i = i
+                    best_v = (x_i[i-1] + x_i[i]) / 2
                     best_f = f
                     self.split_rec.improvement = best_improvement
                     self.split_rec.feature_idx = f
@@ -242,7 +249,10 @@ class Splitter:
 
 def TreeBuilder():
 
-    f = open("C:\Program Files (x86)\WinPython-64bit-3.4.3.3\python-3.4.3.amd64\Lib\site-packages\sklearn\datasets\data\\iris2.csv",'r', encoding='utf-8')
+    
+    #f = open("C:\Program Files (x86)\WinPython-64bit-3.4.3.3\python-3.4.3.amd64\Lib\site-packages\sklearn\datasets\data\\iris2.csv",'r', encoding='utf-8')
+    f = open("E:\scikit-learn-master\sklearn\datasets\data\iris.csv", 'r', encoding='utf-8')
+
 
     dim_x,dim_y = map(int,str(f.readline()).split(',')[:2])
     sample_weight_y =  numpy.ones(dim_x)
@@ -308,14 +318,6 @@ def TreeBuilder():
 
 if __name__ == '__main__':
     TreeBuilder()
-
-
-
-
-
-
-
-    
 
 
 
