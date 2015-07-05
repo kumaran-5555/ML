@@ -3,15 +3,15 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>160a6c70-f1e4-4f56-95ae-5216802c75ed</ProjectGuid>
+    <ProjectGuid>2322d842-6850-4e23-b606-8287401c0277</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>ML.py</StartupFile>
+    <StartupFile>DomainNameFeaturizer.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <Name>ML</Name>
-    <RootNamespace>ML</RootNamespace>
+    <Name>DomainNameFeaturizer</Name>
+    <RootNamespace>DomainNameFeaturizer</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,10 +22,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ML.py" />
-    <Compile Include="Test.py">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="DomainNameFeaturizer.py" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

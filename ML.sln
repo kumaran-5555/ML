@@ -3,7 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "ML", "ML\ML.pyproj", "{160A6C70-F1E4-4F56-95AE-5216802C75ED}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ML-Misc", "ML-Misc", "{71BF44FA-4450-4410-83C6-268C66E1C373}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "ML-Experiments", "ML-Experiments\ML-Experiments.pyproj", "{8E3314F2-977E-420F-B433-7D3B2ADDDFAA}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "ML-Implementation", "ML-Implementation\ML-Implementation.pyproj", "{CC5460FB-C053-4203-8BEB-3C13993D59B3}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "ML-Misce", "ML-Misce\ML-Misce.pyproj", "{7F0A2E6E-B5F5-4B78-AE6A-92B37A9E4EF5}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "DomainNameFeaturizer", "DomainNameFeaturizer\DomainNameFeaturizer.pyproj", "{2322D842-6850-4E23-B606-8287401C0277}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,8 +19,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{160A6C70-F1E4-4F56-95AE-5216802C75ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{160A6C70-F1E4-4F56-95AE-5216802C75ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E3314F2-977E-420F-B433-7D3B2ADDDFAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E3314F2-977E-420F-B433-7D3B2ADDDFAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC5460FB-C053-4203-8BEB-3C13993D59B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC5460FB-C053-4203-8BEB-3C13993D59B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F0A2E6E-B5F5-4B78-AE6A-92B37A9E4EF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F0A2E6E-B5F5-4B78-AE6A-92B37A9E4EF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2322D842-6850-4E23-B606-8287401C0277}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2322D842-6850-4E23-B606-8287401C0277}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
