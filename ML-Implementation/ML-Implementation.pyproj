@@ -26,6 +26,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DecisionTree.py" />
+    <Compile Include="GradientBoosting.py" />
     <Compile Include="LinearRegression.py" />
     <Compile Include="LogisticRegression.py" />
     <Compile Include="ML_Implementation.py" />

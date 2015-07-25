@@ -1,4 +1,4 @@
-import numpy
+﻿import numpy
 import random
 import pickle
 import json
@@ -406,6 +406,24 @@ class DecisionTreeBuilder():
                
         return self.treeDict
 
+    def get_terminal_regions(self, dataX):
+        nSamples = dataX.shape[0]
+        nodeIds = numpy.zeros((nSamples))
+
+
+        for i in range(nSamples):
+            node = self.treeDict[0]
+            while not node.isLeaf:
+                if dataX[i][node.splitFeature] <= node.splitValue:
+                    node = self.treeDict[node.leftId]
+                else:
+                    node = self.treeDict[node.rightId]
+
+            
+            nodeIds[i] = node.nodeId
+        
+        return nodeIds
+
 
     def predict_proba(self, dataX):
         if self.type != Constants.Classifier:
@@ -473,6 +491,10 @@ if __name__ == '__main__':
     print()
 
     print(metrics.mean_squared_error(dataY, c.predict_value(dataX)))
+
+    print(c.get_terminal_regions(dataX))
+    print()
+
 
 
     
