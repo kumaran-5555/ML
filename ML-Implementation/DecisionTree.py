@@ -327,6 +327,14 @@ class Tree():
         self.leftId = leftId
         self.rightId = rightId
 
+    def __str__(self):
+        # prints node
+        return ('[{0}] => value[{1}] impurity[{2}] isLeaf[{3}] feat[{4}] featval[{5}] leftId[{6}] rightId[{7}]'.format(self.nodeId, \
+            self.nodeValue, self.nodeImpurity, self.isLeaf, self.splitFeature, self.splitValue, self.leftId, self.rightId))
+
+
+
+
 class Constants():
     Classifier = 'Classifier'
     Regression = 'Regression'
@@ -371,6 +379,7 @@ class DecisionTreeBuilder():
         self.treeDict = {}
 
     def fit(self):
+
 
         # stack record (start, end, nodeId, depth)
         self.stack.append((0, self.nSamples, self.nodeId, 0))
@@ -464,6 +473,17 @@ class DecisionTreeBuilder():
             predictedY[i] = node.nodeValue
         
         return predictedY
+
+
+    def __str__(self):
+        '''
+            prints the tree
+        '''
+        for i in self.treeDict:
+            print(self.treeDict[i])
+
+        return ''
+
 
 if __name__ == '__main__':
     data = datasets.load_iris()
