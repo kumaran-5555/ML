@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>cc5460fb-c053-4203-8beb-3c13993d59b3</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>DecisionTree.py</StartupFile>
+    <StartupFile>GradientBoosting.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>

@@ -10,10 +10,40 @@ import DecisionTree
 from sklearn import ensemble
 import scipy
 
+class LeastSquareLoss():
+    def loss(self, dataY, prediction):
+        '''
+            L = (y -p)**2
+        '''
+        return numpy.square(dataY - prediction)
+
+    def negativeGradient(self, dataY, prediction):
+        '''
+            L' = -2 * (y - p) 
+
+            residual = -1 * L'
+                     = 2 * (y - p)
+        '''
+
+        return 2 * (dataY - prediction)
+
+
+    def updateTerminalNodes(self, tree, dataX, dataY, residual, currentPrediction, learningRate=0.1):
+        '''
+            residual fitting already minimizes loss function because 
+            it y-p is what is predicted for residual, so no need 
+            for terminal node updates 
+
+        '''
+
+        # update the prediction score
+        # boosting
+        currentPrediction += learningRate * tree.predict_value(dataX)
+        
 
 
 class BinomialLoss():
-    def loss(self, dataY, prediction):
+    def lossE(self, dataY, prediction):
         '''
             L = -2.0 * (y * log(P)  + (1-y) * log(1-P))
             P = exp(prediction) / (1 + exp(prediction))
@@ -78,7 +108,7 @@ class BinomialLoss():
         selectedDataY = dataY.take(selectedTerminalNodes, axis=0)
 
         # numerator = -1 * L' = residual
-        numerator = numpy.sum(selectedResidual)
+        numerator = numpy.sum(selectedResidual) 
 
         # denomator = L'' = ( (Y - residual) * ( 1 - Y + residual))
         denominator = 2.0 * numpy.sum( (selectedDataY - 0.5 * selectedResidual) * (1 - selectedDataY + 0.5 * selectedResidual))
@@ -93,13 +123,118 @@ class BinomialLoss():
 
 
 
+class GradientBosstedTreeRegressor:
+
+    def __init__(self, dataX, dataY, sampleWeight, minSamplesLeaf, minSamplesSplit, minWeightLeaf, maxDepth, maxEnsembles, learningRate):
+        
+        self.dataX = dataX
+        self.dataY = dataY
+        self.sampleWeight = sampleWeight
+        self.minSamplesLeaf = minSamplesLeaf
+        self.minWeightLeaf = minWeightLeaf
+        self.minSamplesSplit = minSamplesSplit
+        self.maxDepth = maxDepth
+        self.maxEnsembles = maxEnsembles
+        self.ensembles = []
+        self.learningRate = learningRate
+
+         
+        self.nSamples = self.dataX.shape[0]
+
+        # stage wise predictions (n, maxEnsembles)
+        self.predictions = numpy.zeros((self.nSamples, self.maxEnsembles))
+
+        self.loss = LeastSquareLoss()
+        self.currentPrediction = numpy.zeros((self.nSamples))
+        self.initialPrediction = None
+
+    def _initEstimator(self):
+        '''
+            we predict mean value as the initial prediction
+        '''
+
+        totalY = 0
+        for i in range(self.nSamples):
+            totalY += self.dataY[i]
 
 
+
+        initialPredictions = numpy.zeros((self.nSamples))
+        initialPredictions.fill(numpy.mean(self.dataY))
+
+        # remember initial prediction, we will re-use this when we
+        # predict for test samples
+
+        self.initialPrediction = numpy.mean(self.dataY)
+
+
+        return initialPredictions
+
+    def fit(self):
+        '''
+            fit all stages, stage 0 is fitted using initial esitmator
+        '''
+        
+        self.currentPrediction = self._initEstimator()
+
+
+        for i in range(1, self.maxEnsembles):
+            loss = self.fitStage(i)
+
+
+    def fitStage(self, i):
+
+        residual = self.loss.negativeGradient(self.dataY, self.currentPrediction)
+
+        # fit residual using dataX
+        tree = DecisionTree.DecisionTreeBuilder(DecisionTree.Constants.Regression, self.dataX, residual, 0, \
+            self.sampleWeight, self.minSamplesLeaf, self.minSamplesSplit, self.minWeightLeaf, self.maxDepth)
+
+        tree.fit()
+               
+        # current predictions are updated in this function        
+        self.loss.updateTerminalNodes(tree, self.dataX, self.dataY, residual, self.currentPrediction, learningRate=self.learningRate)
+
+        # add the final tree to list of ensembles
+        self.ensembles.append(tree)
+        
+    
+
+    def predict_stages(self, dataX, startStage, endStage):
+        '''
+            predict stages from start to end and adds all predicted
+            scores  with  learningRate used for training
+        '''
+
+        # initialize predictions
+        
+        score = numpy.zeros(dataX.shape[0])
+        # fill with the intial prediction used for
+        # training 
+        score.fill(self.initialPrediction)
+        
+        for i in range(startStage, endStage):
+            tree = self.ensembles[i]
+            predictedScore = tree.predict_value(dataX)
+
+            score += predictedScore * self.learningRate
+
+        return score
+
+
+    def predict_value(self, dataX):
+        totalTrees = len(self.ensembles)
+        score = self.predict_stages(dataX, 0, totalTrees)
+
+
+        return score
+
+    
 
 
 class GradientBoostedTreeClassifier:
 
-    def __init__(self, dataX, dataY, nClasses, sampleWeight, minSamplesLeaf, minSamplesSplit, minWeightLeaf, maxDepth, maxEnsembles):
+    def __init__(self, dataX, dataY, nClasses, sampleWeight, minSamplesLeaf, minSamplesSplit, minWeightLeaf, maxDepth, maxEnsembles, learningRate):
         if nClasses > 2:
             print('only binary classes are allowed')
             raise ValueError 
@@ -114,6 +249,8 @@ class GradientBoostedTreeClassifier:
         self.maxDepth = maxDepth
         self.maxEnsembles = maxEnsembles
         self.ensembles = []
+        self.learningRate = learningRate
+
          
         self.nSamples = self.dataX.shape[0]
 
@@ -122,6 +259,8 @@ class GradientBoostedTreeClassifier:
 
         self.loss = BinomialLoss()
         self.currentPrediction = numpy.zeros((self.nSamples))
+        self.initialPrediction = None
+
 
     def _initEstimator(self):
         posCount = 0
@@ -132,6 +271,12 @@ class GradientBoostedTreeClassifier:
 
         initialPredictions = numpy.zeros((self.nSamples))
         initialPredictions.fill(scipy.log(posCount /negCount))
+
+        # remember initial prediction, we will re-use this when we
+        # predict for test samples
+
+        self.initialPrediction = scipy.log(posCount / negCount)
+
 
         return initialPredictions
 
@@ -160,35 +305,87 @@ class GradientBoostedTreeClassifier:
         tree.fit()
                
         # current predictions are updated in this function        
-        self.loss.updateTerminalNodes(tree, self.dataX, self.dataY, residual, self.currentPrediction)
+        self.loss.updateTerminalNodes(tree, self.dataX, self.dataY, residual, self.currentPrediction, learningRate=self.learningRate)
 
         # add the final tree to list of ensembles
         self.ensembles.append(tree)
 
 
 
+    
+
+    def predict_stages(self, dataX, startStage, endStage):
+        '''
+            predict stages from start to end and adds all predicted
+            scores  with  learningRate used for training
+        '''
+
+        # initialize predictions
+        
+        score = numpy.zeros(dataX.shape[0])
+        # fill with the intial prediction used for
+        # training 
+        score.fill(self.initialPrediction)
+        
+        for i in range(startStage, endStage):
+            tree = self.ensembles[i]
+            predictedScore = tree.predict_value(dataX)
+
+            score += predictedScore * self.learningRate
+
+        return score
 
 
+    def predict_value(self, dataX):
+        totalTrees = len(self.ensembles)
+        score = self.predict_stages(dataX, 0, totalTrees)
 
 
+        return score
 
+    def predict_proba(self, dataX):
+        totalTrees = len(self.ensembles)
+        score = self.predict_stages(dataX, 0, totalTrees)
+
+        proba = numpy.ones((score.shape[0], 2), dtype=numpy.float64)
+        proba[:, 1] = 1.0 / (1.0 + numpy.exp(-score.ravel()))
+        proba[:, 0] -= proba[:, 1]
+        return proba
 
 
 if __name__ == '__main__':
     #b = ensemble.GradientBoostingClassifier(n_estimators=1)
     
+    '''
     data = datasets.load_iris()
     x = data.data
     y = data.target
 
     for i in range(y.shape[0]):
-        if y[i] != 0:
+        if y[i] != 2:
+            y[i] = 0
+        else:
             y[i] = 1
 
-    b = GradientBoostedTreeClassifier(x, y, 2, None, 2, 2, 2, None, 2)
+
+    b = GradientBoostedTreeClassifier(x, y, 2, None, 2, 2, 2, None, 50, 0.1)
     b.fit()
 
     print(b)
+
+    print(b.predict_value(x))
+    '''
+
+    data = datasets.load_boston()
+
+    b = GradientBosstedTreeRegressor(data.data, data.target, None, 2, 2, 2, None, 50, 0.1)
+
+    b.fit()
+
+
+    print(b.predict_value(data.data))
+
+
 
 
     '''
