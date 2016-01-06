@@ -13,6 +13,8 @@ Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "ML-Misce", "ML-Misce\ML-Mis
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "DomainNameFeaturizer", "DomainNameFeaturizer\DomainNameFeaturizer.pyproj", "{2322D842-6850-4E23-B606-8287401C0277}"
 EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Kaggle_PrudentialLife", "Kaggle_PrudentialLife\Kaggle_PrudentialLife.pyproj", "{8D670E32-E76C-4ABF-A43A-36DC46259651}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,8 @@ Global
 		{7F0A2E6E-B5F5-4B78-AE6A-92B37A9E4EF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2322D842-6850-4E23-B606-8287401C0277}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2322D842-6850-4E23-B606-8287401C0277}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D670E32-E76C-4ABF-A43A-36DC46259651}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D670E32-E76C-4ABF-A43A-36DC46259651}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

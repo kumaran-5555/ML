@@ -378,12 +378,12 @@ if __name__ == '__main__':
 
     data = datasets.load_boston()
 
-    b = GradientBosstedTreeRegressor(data.data, data.target, None, 2, 2, 2, None, 50, 0.1)
+    b = GradientBosstedTreeRegressor(data.data[10:,], data.target[10:,], None, 2, 2, 2, None, 30, 0.1)
 
     b.fit()
 
 
-    print(b.predict_value(data.data))
+    print(b.predict_value(data.data[:10,]))
 
 
 
