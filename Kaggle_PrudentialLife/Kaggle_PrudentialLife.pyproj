@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>8d670e32-e76c-4abf-a43a-36dc46259651</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>DataProcessing.py</StartupFile>
+    <StartupFile>Training.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -26,6 +26,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Kaggle_PrudentialLife.py" />
+    <Compile Include="Training.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Utils.py">
       <SubType>Code</SubType>
     </Compile>

@@ -1,8 +1,14 @@
-
+﻿
 import numpy as np
 import sys
 import Utils
 import sklearn.preprocessing.imputation
+import pickle
+import os.path
+import os
+
+
+#import GBTThreadedSweep
 
 
 
@@ -40,7 +46,7 @@ class DataProcessing:
                 isHeader = False
                 continue
 
-            self.testX.append(fields[:-1])
+            self.testX.append(fields)
 
 
         print(self)
@@ -53,6 +59,10 @@ class DataProcessing:
 
     def preprocessorV1(self):
 
+        outputDir = self.dirName + 'DataV1'
+        
+        os.mkdir(outputDir)
+
         Utils.RemoveColumns(self, ['Id'])
         print(self)
         Utils.NumberizeCategoryFeatures(self, ['Product_Info_2'])
@@ -64,18 +74,23 @@ class DataProcessing:
 
         # impute values
         
-        trainX = np.array(self.trainX)
-        testX = np.array(self.testX)
+        trainX = np.array(self.trainX, dtype=float)
+        testX = np.array(self.testX, dtype=float)
 
-        trainY = np.array(self.trainY)
+        trainY = np.array(self.trainY, dtype=float)
 
 
-        imputer = sklearn.preprocessing.Imputer(missing_values='NaN', strategy='mode')
+        imputer = sklearn.preprocessing.Imputer(missing_values='NaN', strategy='most_frequent')
 
         imputer.fit(trainX)
 
         trainX = imputer.transform(trainX)
         testX = imputer.transform(testX)
+
+
+        pickle.dump(trainX, open(outputDir+r'\trainX.p', 'wb'))
+        pickle.dump(testX, open(outputDir+r'\testX.p', 'wb'))
+        pickle.dump(trainY, open(outputDir+r'\trainY.p', 'wb'))
 
 
         print(self)

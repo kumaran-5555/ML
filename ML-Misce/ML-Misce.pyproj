@@ -24,6 +24,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="freeformFitter.py" />
+    <Compile Include="GBTThreadedSweep.py" />
     <Compile Include="MLMeta.py" />
     <Compile Include="PML_Misc.py" />
     <Compile Include="test.py" />
