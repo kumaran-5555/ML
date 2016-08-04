@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ML-Misc", "ML-Misc", "{71BF44FA-4450-4410-83C6-268C66E1C373}"
 EndProject
@@ -16,6 +16,8 @@ EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Kaggle_PrudentialLife", "Kaggle_PrudentialLife\Kaggle_PrudentialLife.pyproj", "{8D670E32-E76C-4ABF-A43A-36DC46259651}"
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Kaggle_Grupo", "Kaggle_Grupo\Kaggle_Grupo.pyproj", "{014B5324-CC8F-42D0-B8E3-811C44818B10}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "FrameWork", "FrameWork\FrameWork.pyproj", "{B586CAA4-7F52-45D4-90C5-81CB2978A317}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,6 +37,8 @@ Global
 		{8D670E32-E76C-4ABF-A43A-36DC46259651}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{014B5324-CC8F-42D0-B8E3-811C44818B10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{014B5324-CC8F-42D0-B8E3-811C44818B10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B586CAA4-7F52-45D4-90C5-81CB2978A317}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B586CAA4-7F52-45D4-90C5-81CB2978A317}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -3,15 +3,15 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>cc5460fb-c053-4203-8beb-3c13993d59b3</ProjectGuid>
+    <ProjectGuid>b586caa4-7f52-45d4-90c5-81cb2978a317</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Knn.py</StartupFile>
+    <StartupFile>GrupoRunner.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <Name>ML-Implementation</Name>
-    <RootNamespace>ML-Implementation</RootNamespace>
+    <Name>FrameWork</Name>
+    <RootNamespace>FrameWork</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,20 +22,16 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="DataSets.py">
+    <Compile Include="FrameWork.py" />
+    <Compile Include="GrupoRunner.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DecisionTree.py" />
-    <Compile Include="GradientBoosting.py" />
-    <Compile Include="Knn.py">
+    <Compile Include="Orchestrator.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="LinearRegression.py" />
-    <Compile Include="LogisticRegression.py" />
-    <Compile Include="ML_Implementation.py" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="RegessionTestData.txt" />
+    <Compile Include="TrainModel.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
