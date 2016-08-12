@@ -15,7 +15,7 @@ import random
 
 
 
-def _thread(trainer, outputDir, xTrain, yTrain, xCV, yCV, reqQ, respQ):
+def _thread(trainer, outputDir, xTrain, yTrain, xCV, yCV, test, finalPredictFunc, reqQ, respQ):
 
     while True:
         params = json.loads(reqQ.get())
@@ -28,26 +28,29 @@ def _thread(trainer, outputDir, xTrain, yTrain, xCV, yCV, reqQ, respQ):
         
 
 
-        m = trainer(outputDir + hash, xTrain, yTrain, xCV, yCV, params)
+        m = trainer(outputDir + hash, xTrain, yTrain, xCV, yCV, test, finalPredictFunc, params)
         m.start()
         
-        respQ.put(str(m.stats))
+        respQ.put(m.strStats())
     return 0
 
 
 class Orchestrator:
-    def __init__(self, dataDir, outputDir, args, trainer, resetData=False, threads=2):
+    def __init__(self, dataDir, outputDir, args, trainer, finalPredictFunc, resetData=False, threads=2, debug=False):
         self.dataDir = dataDir
         self.outputDir = outputDir
         self.resetData = resetData
         self.args = args
-        self.threads = 2
+        self.threads = threads
         self.trainer = trainer
         self.xTrain = None
         self.yTrain = None
         self.xCV = None
         self.yCV = None
         self.params = list(args.keys())
+        self.debug = debug
+        self.finalPredictFunc = finalPredictFunc
+
         self.sweep = []
         self.reqQ = Queue()
         self.respQ = Queue()
@@ -79,16 +82,17 @@ class Orchestrator:
 
         # get data and persist
         if self.resetData or not os.path.exists(self.dataDir + 'train.pkl') \
-            or not os.path.exists(self.dataDir + 'cv.pkl'):
+            or not os.path.exists(self.dataDir + 'cv.pkl') or not os.path.exists(self.dataDir + 'test.pkl'):
             print('STS: Resetting data..')
-            train, cv = self.getData(self.dataDir + 'train.tsv', \
-                self.dataDir + 'cv.tsv')
+            train, cv, test = self.getData(self.dataDir + 'train.tsv', \
+                self.dataDir + 'cv.tsv', sefl.dataDir + 'test.tsv')
 
 
-            self.xTrain = train[:,1:]
-            self.yTrain = train[:,0]
-            self.xCV = cv[:,1:]
-            self.yCV = cv[:,0]
+            self.xTrain = train[:,:-1]
+            self.yTrain = train[:,-1]
+            self.xCV = cv[:,:-1]
+            self.yCV = cv[:,-1]
+            self.test = test
 
             print('STS: Persisting data..')
             # persist
@@ -104,15 +108,21 @@ class Orchestrator:
             with open(self.dataDir + 'yCV.pkl', 'wb') as file:
                 pickle.dump(self.yCV, file)
 
+            with open(self.dataDir + 'test.pkl', 'wb') as file:
+                pickle.dump(self.test, file)
+
+
         else:
             print('STS: Loading data..')
             train = pickle.load(open(self.dataDir + 'train.pkl', 'rb'))
             cv = pickle.load(open(self.dataDir + 'cv.pkl', 'rb'))
+            test = pickle.load(open(self.dataDir + 'test.pkl', 'rb'))
 
-            self.xTrain = train[:,1:]
-            self.yTrain = train[:,0]
-            self.xCV = cv[:,1:]
-            self.yCV = cv[:,0]
+            self.xTrain = train[:,:-1]
+            self.yTrain = train[:,-1]
+            self.xCV = cv[:,:-1]
+            self.yCV = cv[:,-1]
+            self.test = test
 
 
         # do dymanic preproc
@@ -125,10 +135,21 @@ class Orchestrator:
         self._processArgs(0, defaultdict(lambda : None))
         print('STS: Total sweep params ', len(self.sweep))
 
+        if self.debug:
+            for p in self.sweep:
+                hash = p['_HASH']
+                del p['_HASH']
+
+                m = self.trainer(self.outputDir + hash, self.xTrain, self.yTrain, self.xCV, self.yCV, self.test, self.finalPredictFunc, p)
+
+                m.start()
+
+            return
+
         # start threads
         print('STS: Creating threads {}...', self.threads)
         for i in range(self.threads):
-            p = Process(target=_thread, args=(self.trainer, self.outputDir, self.xTrain, self.yTrain, self.xCV, self.yCV, self.reqQ, self.respQ))
+            p = Process(target=_thread, args=(self.trainer, self.outputDir, self.xTrain, self.yTrain, self.xCV, self.yCV, self.test, self.finalPredictFunc, self.reqQ, self.respQ))
             p.start()
             self.processes.append(p)
 
@@ -136,6 +157,7 @@ class Orchestrator:
         # assign work
 
         busyThreads = 0
+
 
         for params in self.sweep:
             if busyThreads >= self.threads:
@@ -158,7 +180,7 @@ class Orchestrator:
 
         print('STS: Killing all threads...')
         for i in range(self.threads):        
-            self.reqQ.put({'_CMD' :'KILL'})
+            self.reqQ.put(json.dumps({'_CMD' :'KILL'}))
 
         for p in self.processes:
             p.join()
@@ -175,30 +197,7 @@ class Orchestrator:
 
 
 
-class GrupoOrchestrator(Orchestrator):
-    
 
-    def getData(self, train, cv):
-        
-        cv = np.genfromtxt(cv, \
-            delimiter='\t', usecols=(13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33), comments="m:", filling_values=1)
-
-        train = np.loadtxt(train, \
-            delimiter='\t', usecols=(13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33), comments="m:")
-
-        return train, cv
-
-
-    def preproc(self, xTrain, yTrain, xCV, yCV):
-        
-        scale = preprocessing.StandardScaler()
-        xTrain = xTrain[:,[3,10,11,12,13,14,15,16,17,18,19]]
-        xCV = xCV[:,[3,10,11,12,13,14,15,16,17,18,19]]
-
-        xTrain = scale.fit_transform(xTrain)
-        xCV = scale.transform(xCV)
-
-        return xTrain, yTrain, xCV, yCV
 
 
 

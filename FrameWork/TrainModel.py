@@ -3,16 +3,14 @@ import pickle
 import datetime
 
 from sklearn import linear_model
+from sklearn import ensemble as skensemble
 from sklearn import metrics
+from sktlc import ensemble
 import numpy as np
-
-
-
-
-
+import xgboost as xgb
 
 class TrainModel(object):
-    def __init__(self, modelFile, xTrain, yTrain, xCV, yCV, args):
+    def __init__(self, modelFile, xTrain, yTrain, xCV, yCV, test, finalPredictFunc, args):
         self.modelFile = modelFile
         self.args = args
         self.model = None
@@ -22,10 +20,18 @@ class TrainModel(object):
         self.yCV = yCV
         self.precitionsCV = None
         self.stats = {}
+        self.test = test
+        self.finalPredictFunc = finalPredictFunc
+        self.outputFile = open(self.modelFile + '.' + self.__class__.__name__ + '.txt', 'w')
 
 
-    def __str__(self, **kwargs):
-        return str(self.stats)
+
+    def strStats(self):
+        return str.format('{}\t{}\t{}\t{}\t{}\t{}\t{}', self.stats['args'], self.stats['cvError'], \
+            self.stats['cvErrorBeforeFreeform'], self.stats['startTime'], self.stats['endTime'], \
+            self.stats['totalTime'], self.stats['modelFile'])
+
+
 
     def save(self):
 
@@ -52,7 +58,11 @@ class TrainModel(object):
         
         self.cvpredict()
 
+        self.predict()
+
         end = datetime.datetime.now()
+
+
         self.stats['endTime'] = end.strftime("%Y-%m-%d %H:%M:%S")
         self.stats['totalTime'] = str(end - start)
         self.save()
@@ -80,16 +90,13 @@ class TrainModel(object):
     def freeform(self, x, predictions):
         return predictions
     
-    def predict(self, xTest):
+    def predict(self):
         '''
         for final measurement
         '''
 
-        if self.model == None:
-            self.model = pickle.load(open(self.modelFile, 'rb'))
+        self.stats['totalFinalPredictions'] = self.finalPredictFunc(self.test, self.model, self.outputFile)
 
-        temp =  self.model.predict(xTest)
-        return self.freeform(xTest, temp)
 
 
 
@@ -110,7 +117,69 @@ class SGDTrain(TrainModel):
         return metrics.mean_squared_error(self.yCV, self.precitionsCV)
 
 
+class Ridge(TrainModel):
+
+    def __init__(self, modelFile, xTrain, yTrain, xCV, yCV, args):
+        return super().__init__(modelFile, xTrain, yTrain, xCV, yCV, args)
 
 
+    def train(self, **kargs):
+        self.model = linear_model.Ridge(**kargs)
+
+        self.model.fit(self.xTrain, self.yTrain)
+
+
+    def metric(self):
+        return metrics.mean_squared_error(self.yCV, self.precitionsCV)
+
+
+class TreeRegressor(TrainModel):
+
+    def __init__(self, modelFile, xTrain, yTrain, xCV, yCV, args):
+        return super().__init__(modelFile, xTrain, yTrain, xCV, yCV, args)
+
+
+    def train(self, **kargs):
+        self.model = ensemble.auto_TlcFastForestRegression.TlcFastForestRegression(**kargs)
+
+        self.model.fit(self.xTrain, self.yTrain)
+
+
+    def metric(self):
+        return metrics.mean_squared_error(self.yCV, self.precitionsCV)
                 
 
+class AdaBoost(TrainModel):
+
+    def __init__(self, modelFile, xTrain, yTrain, xCV, yCV, args):
+        return super().__init__(modelFile, xTrain, yTrain, xCV, yCV, args)
+
+
+    def train(self, **kargs):
+        self.model = skensemble.AdaBoostRegressor(**kargs)
+
+        self.model.fit(self.xTrain, self.yTrain)
+
+
+    def metric(self):
+        return metrics.mean_squared_error(self.yCV, self.precitionsCV)
+
+
+class XGB(TrainModel):
+
+    def train(self, **kargs):
+        self.model = xgb.sklearn.XGBRegressor(**kargs)
+        self.model.fit(self.xTrain, self.yTrain,\
+            verbose=True, early_stopping_rounds=10,\
+            eval_metric='rmse', eval_set=[tuple((self.xCV, self.yCV))])
+
+    def metric(self):
+        return metrics.mean_squared_error(self.yCV, self.precitionsCV)
+
+
+    def metric2(self, pred, true):
+        return metrics.mean_squared_error(true, pred)
+
+        
+    
+       
