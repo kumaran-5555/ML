@@ -169,6 +169,7 @@ class XGB(TrainModel):
 
     def train(self, **kargs):
         self.model = xgb.sklearn.XGBRegressor(**kargs)
+
         self.model.fit(self.xTrain, self.yTrain,\
             verbose=True, early_stopping_rounds=10,\
             eval_metric='rmse', eval_set=[tuple((self.xCV, self.yCV))])

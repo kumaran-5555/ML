@@ -125,9 +125,12 @@ class Orchestrator:
             self.test = test
 
 
+        
+
+
         # do dymanic preproc
         print('STS: Preprocessing data..')
-        self.xTrain, self.yTrain, self.xCV, self.yCV = self.preproc(self.xTrain, self.yTrain, self.xCV, self.yCV)
+        self.xTrain, self.yTrain, self.xCV, self.yCV, self.test = self.preproc(self.xTrain, self.yTrain, self.xCV, self.yCV, self.test)
 
 
         # get sweep list
@@ -189,8 +192,8 @@ class Orchestrator:
         raise NotImplementedError
 
 
-    def preproc(self, xTrain, yTrain, xCV, yCV):
-        return xTrain, yTrain, xCV, yCV
+    def preproc(self, xTrain, yTrain, xCV, yCV, test):
+        return xTrain, yTrain, xCV, yCV, test
 
 
 

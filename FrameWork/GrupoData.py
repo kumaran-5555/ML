@@ -89,7 +89,7 @@ class GrupoData:
         
         del temp
 
-        selected = data[data['Semana'] >= 8]
+        selected = data[data['Semana'] >= 9]
         #print(selected[:20])
 
         numOfClients = data[data['istest']==0].groupby(by=['Agencia_ID']).Cliente_ID.nunique()
@@ -139,8 +139,10 @@ class GrupoData:
         products['brand'] = products['NombreProducto'].apply(GrupoData.extractBrand)
 
         print('STATUS: merging product specific features')
-        data = pd.merge(data, products, on='Producto_ID', how='left')
+        selected = pd.merge(selected, products, on=['Producto_ID'], how='left')
+        del selected['NombreProducto']
 
+        '''
         pca = (data[data['istest']==0].groupby(by=['Producto_ID', 'Cliente_ID', 'Agencia_ID'], as_index=False))['target'].mean()
         pca.rename(columns={'target': 'pcamean'},inplace=True)        
         selected = pd.merge(selected, pca, on=['Producto_ID', 'Cliente_ID', 'Agencia_ID'], how='left')
@@ -159,8 +161,31 @@ class GrupoData:
         print('STATUS: merging p')
         del p
 
+        
+        # impute missing values
+        selected.ix[pd.isnull(selected['pamean']), 'pamean'] = selected['pmean']
+        selected.ix[pd.isnull(selected['pcamean']), 'pcamean'] = selected['pamean']
 
+        selected.ix[pd.isnull(selected['l1']), 'l1'] = selected['pcamean']
+        selected.ix[pd.isnull(selected['l1']), 'l1'] = selected['pamean']
+        selected.ix[pd.isnull(selected['l1']), 'l1'] = selected['pmean']
 
+        selected.ix[pd.isnull(selected['l2']), 'l2'] = selected['pcamean']
+        selected.ix[pd.isnull(selected['l2']), 'l2'] = selected['pamean']
+        selected.ix[pd.isnull(selected['l2']), 'l2'] = selected['pmean']
+
+        selected.ix[pd.isnull(selected['l3']), 'l3'] = selected['pcamean']
+        selected.ix[pd.isnull(selected['l3']), 'l3'] = selected['pamean']
+        selected.ix[pd.isnull(selected['l3']), 'l3'] = selected['pmean']
+
+        selected.ix[pd.isnull(selected['l4']), 'l4'] = selected['pcamean']
+        selected.ix[pd.isnull(selected['l4']), 'l4'] = selected['pamean']
+        selected.ix[pd.isnull(selected['l4']), 'l4'] = selected['pmean']
+
+        selected.ix[pd.isnull(selected['l5']), 'l5'] = selected['pcamean']
+        selected.ix[pd.isnull(selected['l5']), 'l5'] = selected['pamean']
+        selected.ix[pd.isnull(selected['l5']), 'l5'] = selected['pmean']
+        '''
 
         # from week 9, hold some data for cv
         cv = random.sample(selected[selected['Semana']==9].index.tolist(), 30000)
@@ -184,17 +209,18 @@ class GrupoData:
         del cvdata['istest']
 
         # save the frames
+
         train[:10000].to_csv(self.outputDir + 'train.tsv', sep='\t', encoding='utf-8', index=False)
         test[:10000].to_csv(self.outputDir + 'test.tsv', sep='\t', encoding='utf-8', index=False)
         cvdata[:10000].to_csv(self.outputDir + 'cv.tsv', sep='\t', encoding='utf-8', index=False)
 
         pickle.dump(train, open(self.outputDir + 'train.pd.pkl', 'wb'))
-        pickle.dump(test, open(self.outputDir + 'test.pd.pkl', 'wb'))
+        pickle.dump(test, open(self.outputDir + 'test.pkl', 'wb'))
         pickle.dump(cvdata, open(self.outputDir + 'cvdata.pd.pkl', 'wb'))
 
         # numpy pkl
         pickle.dump(train.values, open(self.outputDir + 'train.pkl', 'wb')) 
-        pickle.dump(test.values, open(self.outputDir + 'test.pkl', 'wb'))
+        pickle.dump(test.values, open(self.outputDir + 'test.np.pkl', 'wb'))
         pickle.dump(cvdata.values, open(self.outputDir + 'cv.pkl', 'wb'))
 
 
