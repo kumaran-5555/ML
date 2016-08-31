@@ -58,7 +58,7 @@ class Orchestrator:
         if not os.path.exists(self.outputDir):
             os.makedirs(self.outputDir)
 
-        self.statusFile = open(self.outputDir + 'report.tsv', 'w')
+        self.statusFile = open(self.outputDir + 'report.tsv', 'a')
 
     @staticmethod
     def _getHash():
@@ -164,20 +164,20 @@ class Orchestrator:
 
         for params in self.sweep:
             if busyThreads >= self.threads:
-                self.statusFile.write(self.respQ.get() + '\n')
+                self.statusFile.write(self.respQ.get() + '\t' + str(self.test.columns.names) + '\n')
                 self.statusFile.flush()
                 busyThreads -= 1
 
             # there is thread availble here
             print('STS: started training for ', params)
-            self.reqQ.put(json.dumps(params))
+            self.reqQ.put(json.dumps(params, sort_keys=True))
             busyThreads += 1
 
 
 
         print('STS: Done with all params...')
         while busyThreads:
-            self.statusFile.write(self.respQ.get() + '\n')
+            self.statusFile.write(self.respQ.get() + '\t' + str(self.test.columns.names) + '\n')
             self.statusFile.flush()
             busyThreads -= 1
 

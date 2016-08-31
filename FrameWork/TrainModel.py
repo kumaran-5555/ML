@@ -1,7 +1,7 @@
 import sys
 import pickle
 import datetime
-
+import math
 from sklearn import linear_model
 from sklearn import ensemble as skensemble
 from sklearn import metrics
@@ -27,9 +27,9 @@ class TrainModel(object):
 
 
     def strStats(self):
-        return str.format('{}\t{}\t{}\t{}\t{}\t{}\t{}', self.stats['args'], self.stats['cvError'], \
+        return str.format('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}', self.stats['args'], self.stats['cvError'], \
             self.stats['cvErrorBeforeFreeform'], self.stats['startTime'], self.stats['endTime'], \
-            self.stats['totalTime'], self.stats['modelFile'])
+            self.stats['totalTime'], self.stats['modelFile'], self.stats['trainShape'])
 
 
 
@@ -53,6 +53,7 @@ class TrainModel(object):
         start = datetime.datetime.now()
         self.stats['startTime'] = start.strftime("%Y-%m-%d %H:%M:%S")
         self.stats['args'] = self.args
+        self.stats['trainShape'] = self.xTrain.shape
 
         self.train(**self.args)
         
@@ -114,7 +115,7 @@ class SGDTrain(TrainModel):
 
 
     def metric(self):
-        return metrics.mean_squared_error(self.yCV, self.precitionsCV)
+        return math.sqrt(metrics.mean_squared_error(self.yCV, self.precitionsCV))
 
 
 class Ridge(TrainModel):
@@ -130,7 +131,7 @@ class Ridge(TrainModel):
 
 
     def metric(self):
-        return metrics.mean_squared_error(self.yCV, self.precitionsCV)
+        return math.sqrt(metrics.mean_squared_error(self.yCV, self.precitionsCV))
 
 
 class TreeRegressor(TrainModel):
@@ -146,7 +147,7 @@ class TreeRegressor(TrainModel):
 
 
     def metric(self):
-        return metrics.mean_squared_error(self.yCV, self.precitionsCV)
+        return math.sqrt(metrics.mean_squared_error(self.yCV, self.precitionsCV))
                 
 
 class AdaBoost(TrainModel):
@@ -162,7 +163,7 @@ class AdaBoost(TrainModel):
 
 
     def metric(self):
-        return metrics.mean_squared_error(self.yCV, self.precitionsCV)
+        return math.sqrt(metrics.mean_squared_error(self.yCV, self.precitionsCV))
 
 
 class XGB(TrainModel):
@@ -175,7 +176,8 @@ class XGB(TrainModel):
             eval_metric='rmse', eval_set=[tuple((self.xCV, self.yCV))])
 
     def metric(self):
-        return metrics.mean_squared_error(self.yCV, self.precitionsCV)
+        return math.sqrt(metrics.mean_squared_error(self.yCV, self.precitionsCV))
+        
 
 
     def metric2(self, pred, true):
