@@ -36,7 +36,8 @@ def _thread(trainer, outputDir, xTrain, yTrain, xCV, yCV, test, finalPredictFunc
 
 
 class Orchestrator:
-    def __init__(self, dataDir, outputDir, args, trainer, finalPredictFunc, resetData=False, threads=2, debug=False):
+    def __init__(self, dataDir, outputDir, args, trainer, finalPredictFunc, resetData=False, threads=2, debug=False,\
+        getData = None, exceptCols = []):
         self.dataDir = dataDir
         self.outputDir = outputDir
         self.resetData = resetData
@@ -50,6 +51,10 @@ class Orchestrator:
         self.params = list(args.keys())
         self.debug = debug
         self.finalPredictFunc = finalPredictFunc
+        self.getData = getData
+        self.exceptCols = exceptCols
+
+
 
         self.sweep = []
         self.reqQ = Queue()
@@ -83,50 +88,30 @@ class Orchestrator:
         # get data and persist
         if self.resetData or not os.path.exists(self.dataDir + 'train.pkl') \
             or not os.path.exists(self.dataDir + 'cv.pkl') or not os.path.exists(self.dataDir + 'test.pkl'):
-            print('STS: Resetting data..')
-            train, cv, test = self.getData(self.dataDir + 'train.tsv', \
-                self.dataDir + 'cv.tsv', sefl.dataDir + 'test.tsv')
+            self.getData(self.dataDir)
 
 
-            self.xTrain = train[:,:-1]
-            self.yTrain = train[:,-1]
-            self.xCV = cv[:,:-1]
-            self.yCV = cv[:,-1]
-            self.test = test
-
-            print('STS: Persisting data..')
-            # persist
-            with open(self.dataDir + 'xTrain.pkl', 'wb') as file:
-                pickle.dump(self.xTrain, file)
-
-            with open(self.dataDir + 'yTrain.pkl', 'wb') as file:
-                pickle.dump(self.yTrain, file)
-
-            with open(self.dataDir + 'xCV.pkl', 'wb') as file:
-                pickle.dump(self.xCV, file)
-
-            with open(self.dataDir + 'yCV.pkl', 'wb') as file:
-                pickle.dump(self.yCV, file)
-
-            with open(self.dataDir + 'test.pkl', 'wb') as file:
-                pickle.dump(self.test, file)
-
-
-        else:
-            print('STS: Loading data..')
-            train = pickle.load(open(self.dataDir + 'train.pkl', 'rb'))
-            cv = pickle.load(open(self.dataDir + 'cv.pkl', 'rb'))
-            test = pickle.load(open(self.dataDir + 'test.pkl', 'rb'))
-
-            self.xTrain = train[:,:-1]
-            self.yTrain = train[:,-1]
-            self.xCV = cv[:,:-1]
-            self.yCV = cv[:,-1]
-            self.test = test
 
 
         
+        print('STS: Loading data..')
+        train = pickle.load(open(self.dataDir + 'train.pkl', 'rb'))
+        cv = pickle.load(open(self.dataDir + 'cv.pkl', 'rb'))
+        test = pickle.load(open(self.dataDir + 'test.pkl', 'rb'))
 
+        cols = [i for i in train.columns.names if i not in self.exceptCols]
+
+        train = train[cols]
+        cv = cv[cols]
+        test = test[cols]
+
+        cols = [i for i in train.columns.names if i not in ['label']]
+
+        self.xTrain = train[cols]
+        self.yTrain = train['label']
+        self.xCV = cv[cols]
+        self.yCV = cv['label']
+        self.test = test
 
         # do dymanic preproc
         print('STS: Preprocessing data..')
@@ -144,8 +129,9 @@ class Orchestrator:
                 del p['_HASH']
 
                 m = self.trainer(self.outputDir + hash, self.xTrain, self.yTrain, self.xCV, self.yCV, self.test, self.finalPredictFunc, p)
-
                 m.start()
+                self.statusFile.write(m.strStatus() + '\t' + str(self.test.columns.names) + '\n')
+                self.statusFile.flush()
 
             return
 
