@@ -37,7 +37,7 @@ def _thread(trainer, outputDir, xTrain, yTrain, xCV, yCV, test, finalPredictFunc
 
 class Orchestrator:
     def __init__(self, dataDir, outputDir, args, trainer, finalPredictFunc, resetData=False, threads=2, debug=False,\
-        getData = None, exceptCols = []):
+        getData = None, exceptCols = [], selectCols = None):
         self.dataDir = dataDir
         self.outputDir = outputDir
         self.resetData = resetData
@@ -50,9 +50,12 @@ class Orchestrator:
         self.yCV = None
         self.params = list(args.keys())
         self.debug = debug
+        # func(test, model, file)
         self.finalPredictFunc = finalPredictFunc
+        # func(outputDir)
         self.getData = getData
         self.exceptCols = exceptCols
+        self.selectCols = selectCols
 
 
 
@@ -88,7 +91,25 @@ class Orchestrator:
         # get data and persist
         if self.resetData or not os.path.exists(self.dataDir + 'train.pkl') \
             or not os.path.exists(self.dataDir + 'cv.pkl') or not os.path.exists(self.dataDir + 'test.pkl'):
-            self.getData(self.dataDir)
+            train, cv, test = self.getData(self.dataDir)
+
+            with open(self.dataDir + 'train.pkl', 'wb') as file:
+                pickle.dump(train, file, protocol=4)
+
+            with open(self.dataDir + 'cv.pkl', 'wb') as file:
+                pickle.dump(cv, file, protocol=4)
+
+            with open(self.dataDir + 'test.pkl', 'wb') as file:
+                pickle.dump(test, file, protocol=4)
+
+            with open(self.dataDir + 'train.tsv', 'w') as file:
+                train[:1000].to_csv(file, index=False, delimiter='\t', header=True)
+                
+            with open(self.dataDir + 'cv.tsv', 'w') as file:
+                cv[:1000].to_csv(file, index=False, delimiter='\t', header=True)
+
+            with open(self.dataDir + 'test.tsv', 'w') as file:
+                test[:1000].to_csv(file, index=False, delimiter='\t', header=True)
 
 
 
@@ -99,13 +120,19 @@ class Orchestrator:
         cv = pickle.load(open(self.dataDir + 'cv.pkl', 'rb'))
         test = pickle.load(open(self.dataDir + 'test.pkl', 'rb'))
 
-        cols = [i for i in train.columns.names if i not in self.exceptCols]
+        cols = [i for i in train.columns.values.tolist() if i not in self.exceptCols]
 
         train = train[cols]
         cv = cv[cols]
         test = test[cols]
 
-        cols = [i for i in train.columns.names if i not in ['label']]
+        if self.selectCols is not None:
+            cols = self.selectCols + ['label']
+            train = train[cols]
+            cv = cv[cols]
+            test = test[cols]
+
+        cols = [i for i in train.columns.values.tolist()if i not in ['label']]
 
         self.xTrain = train[cols]
         self.yTrain = train['label']
@@ -130,7 +157,7 @@ class Orchestrator:
 
                 m = self.trainer(self.outputDir + hash, self.xTrain, self.yTrain, self.xCV, self.yCV, self.test, self.finalPredictFunc, p)
                 m.start()
-                self.statusFile.write(m.strStatus() + '\t' + str(self.test.columns.names) + '\n')
+                self.statusFile.write(m.strStats() + '\t' + str(self.xTrain.columns.values.tolist()) + '\n')
                 self.statusFile.flush()
 
             return
@@ -150,7 +177,7 @@ class Orchestrator:
 
         for params in self.sweep:
             if busyThreads >= self.threads:
-                self.statusFile.write(self.respQ.get() + '\t' + str(self.test.columns.names) + '\n')
+                self.statusFile.write(self.respQ.get() + '\t' + str(self.xTrain.columns.values.tolist()) + '\n')
                 self.statusFile.flush()
                 busyThreads -= 1
 
@@ -163,7 +190,7 @@ class Orchestrator:
 
         print('STS: Done with all params...')
         while busyThreads:
-            self.statusFile.write(self.respQ.get() + '\t' + str(self.test.columns.names) + '\n')
+            self.statusFile.write(self.respQ.get() + '\t' + str(self.xTrain.columns.values.tolist()) + '\n')
             self.statusFile.flush()
             busyThreads -= 1
 

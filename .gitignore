@@ -1,3 +1,6 @@
 *.pyc
-.vs/ML/v14/.suo
 Data/
+.*
+!/.gitignore
+.vs/ML/v14/.suo
+.vs/ML/v14/.suo

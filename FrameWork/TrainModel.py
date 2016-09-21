@@ -10,8 +10,8 @@ import numpy as np
 import xgboost as xgb
 
 class TrainModel(object):
-    def __init__(self, modelFile, xTrain, yTrain, xCV, yCV, test, finalPredictFunc, args):
-        self.modelFile = modelFile
+    def __init__(self, prefix, xTrain, yTrain, xCV, yCV, test, finalPredictFunc, args):
+        self.prefix = prefix + '.' + self.__class__.__name__
         self.args = args
         self.model = None
         self.xTrain = xTrain
@@ -22,7 +22,11 @@ class TrainModel(object):
         self.stats = {}
         self.test = test
         self.finalPredictFunc = finalPredictFunc
-        self.outputFile = open(self.modelFile + '.' + self.__class__.__name__ + '.txt', 'w')
+        self.outputFile = open(self.prefix + '.txt', 'w')        
+        self.statsFile = open(self.prefix + '.stats.txt', 'w')
+        self.modelFile = open(self.prefix + '.pkl', 'wb')
+
+
 
 
 
@@ -38,13 +42,15 @@ class TrainModel(object):
         if self.model == None:
             raise ValueError("self.model is not set, train() should set this value")
 
-        with open(self.modelFile + '.' + self.__class__.__name__ + '.pkl', 'wb') as file:
-            pickle.dump(self.model, file)
+        
+        pickle.dump(self.model, self.modelFile)
 
-        self.stats['modelFile'] = self.modelFile + '.' + self.__class__.__name__ + '.pkl'
+        self.stats['modelFile'] = self.prefix + '.pkl'
 
-        with open(self.modelFile + '.' + self.__class__.__name__ + '.stats.txt', 'w',) as file:
-            file.write(str(self.stats))
+        self.modelFile.flush()
+        
+        self.statsFile.write(str(self.stats))
+        self.statsFile.flush()
 
 
         return True
@@ -77,7 +83,7 @@ class TrainModel(object):
 
     def cvpredict(self):
         
-        self.precitionsCV = self.model.predict(self.xCV)
+        self.precitionsCV = self.model.predict(self.xCV.values)
 
         self.stats['cvErrorBeforeFreeform'] = self.metric()
 
@@ -96,7 +102,7 @@ class TrainModel(object):
         for final measurement
         '''
 
-        self.stats['totalFinalPredictions'] = self.finalPredictFunc(self.test, self.model, self.outputFile)
+        self.stats['totalFinalPredictions'] = self.finalPredictFunc(self)
 
 
 
@@ -184,5 +190,30 @@ class XGB(TrainModel):
         return metrics.mean_squared_error(true, pred)
 
         
+class XGBClassifier(TrainModel):
+    def train(self, **kargs):
+        self.model = xgb.sklearn.XGBClassifier(**kargs)
+
+        fmap = {}
+        
+        for f in self.xTrain.columns.values:
+            fmap['f{}'.format(len(fmap))] = f
+
+
+        self.model.fit(self.xTrain.values, self.yTrain.values,\
+            verbose=True, early_stopping_rounds=10,\
+            eval_metric='auc', eval_set=[tuple((self.xCV.values, self.yCV.values))])
+
+
+        importance = {}
+        for k,v in self.model.booster().get_fscore().items():
+            importance[fmap[k]] = v
+
+        fscore = sorted(importance.items(), key=lambda x: x[1], reverse=True)
+
+        self.statsFile.write(self.prefix  + '\t' + str(fscore))
+        self.statsFile.flush()
+
+    def metric(self):
+        return metrics.auc(self.yCV.values, self.precitionsCV, reorder=True)
     
-       

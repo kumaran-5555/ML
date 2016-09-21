@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>b586caa4-7f52-45d4-90c5-81cb2978a317</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>GrupoRunner.py</StartupFile>
+    <StartupFile>BoschRunner.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -24,8 +24,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="FrameWork.py" />
-    <Compile Include="GrupoData.py">
+    <Compile Include="BoschRunner.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="GrupoRunner.py">

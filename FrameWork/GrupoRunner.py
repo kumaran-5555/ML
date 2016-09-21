@@ -335,7 +335,11 @@ class GrupoData:
         del train, selected, test, cvdata
 
 
-def output(test, model, file):
+def output(modelObj):
+    test = modelObj.test
+    file = modelObj.outputFile
+    model = modelObj.model
+
     # remove id column
     
     test['label'] = test['label'].astype(int)
