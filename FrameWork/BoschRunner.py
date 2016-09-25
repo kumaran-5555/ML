@@ -64,7 +64,7 @@ def output(modelObj):
     prob = model.predict_proba(modelObj.xCV.values)
     prob = prob[:,1]
 
-    thresholds =  np.arange(99, 99.9, 0.05)
+    thresholds =  np.arange(99, 99.9, 0.025)
 
     bestScore =  0
     bestT = 0
@@ -75,7 +75,7 @@ def output(modelObj):
         temp[np.where(prob <= np.percentile(prob, t))] = 0
 
         score = metrics.matthews_corrcoef(modelObj.yCV.values, temp)
-        modelObj.statsFile.write('threshold {} mcc {}\n'.format( t, score))
+        modelObj.statsFile.write('percentile {} threshold {} mcc {}\n'.format( np.percentile(prob, t), t, score))
 
         if score > bestScore:
             bestScore = score
@@ -335,12 +335,12 @@ def xgbNumCat():
     p['colsample_bytree'] = [0.5]
     p['silent'] = [False]
     p['subsample'] = [1]
-    p['base_score'] = [0.003, 0.002]
+    p['base_score'] = [0.002, 0.003]
 
     
 
-    o = BoschOrchestrator('E:\Git\ML\Kaggle_Bosch\Data\DataV7NumCat3\\', 
-                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputXGBNumCat3\\', 
+    o = BoschOrchestrator('E:\Git\ML\Kaggle_Bosch\Data\DataV7NumCat3.4\\', 
+                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputXGBNumCat3.4\\', 
                                        p, TrainModel.XGBClassifier, output, 
                                        resetData=False, threads=1, debug=True, 
                                        getData=processNumCat)
