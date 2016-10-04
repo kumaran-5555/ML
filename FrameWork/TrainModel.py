@@ -49,7 +49,10 @@ class TrainModel(object):
 
         self.modelFile.flush()
         
-        self.statsFile.write(str(self.stats))
+        stats = ""
+        for v in self.stats.items():
+            stats = stats + '\n' + str(v)
+        self.statsFile.write(stats + '\n')
         self.statsFile.flush()
 
 
@@ -201,7 +204,7 @@ class XGBClassifier(TrainModel):
 
 
         self.model.fit(self.xTrain.values, self.yTrain.values,\
-            verbose=True, early_stopping_rounds=10,\
+            verbose=True, early_stopping_rounds=30,\
             eval_metric='auc', eval_set=[tuple((self.xCV.values, self.yCV.values))])
 
 
@@ -211,8 +214,44 @@ class XGBClassifier(TrainModel):
 
         fscore = sorted(importance.items(), key=lambda x: x[1], reverse=True)
 
-        self.statsFile.write(self.prefix  + '\t' + str(fscore))
+        self.statsFile.write(self.prefix + '\n')
+        count  = 1
+        for fs in fscore:
+            self.statsFile.write(str(count) + '\t' + str(fs) + '\n')
+            count+=1
+
+
         self.statsFile.flush()
+
+    @staticmethod
+    def evalmetric(pred, truth):
+        return 'auc_mine', metrics.roc_auc_score(truth.get_label(), pred)
+
+        thresholds =  np.arange(99.6, 99.9, 0.025)
+        bestScore =  0
+        bestT = 0
+        bestAcc = 0
+        bestCf = np.zeros((2,2))
+
+        thresholds = [0.10]
+        for t in thresholds:
+            temp = np.copy(pred)
+            temp[np.where(pred > np.percentile(pred, t))] = 1
+            temp[np.where(pred <= np.percentile(pred, t))] = 0
+            score = metrics.matthews_corrcoef(truth.get_label(), temp)
+            
+
+            if score > bestScore:
+                bestScore = score
+                bestT = np.percentile(pred, t)
+                bestAuc = metrics.roc_auc_score(truth.get_label(), temp, reorder=True)
+                bestCf = metrics.confusion_matrix(truth.get_label(), temp)
+
+        
+        print('threshold {} mcc {} auc {} TN {} FP {} FN {} TP {}\n'.format(bestT, bestScore, bestAcc, bestCf[0][0], bestCf[0][1], bestCf[1][0], bestCf[1][1]))
+
+        return 'mcc', -1 * bestScore
+
 
     def metric(self):
         return metrics.auc(self.yCV.values, self.precitionsCV, reorder=True)

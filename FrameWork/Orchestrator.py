@@ -5,7 +5,7 @@ from multiprocessing import Queue
 from collections import defaultdict 
 from sklearn import preprocessing
 import json
-
+import gc
 import numpy as np
 
 import pickle
@@ -111,6 +111,9 @@ class Orchestrator:
             with open(self.dataDir + 'test.tsv', 'w') as file:
                 test[:1000].to_csv(file, index=False, delimiter='\t', header=True)
 
+            del cv, test, train
+
+            gc.collect()
 
 
 
