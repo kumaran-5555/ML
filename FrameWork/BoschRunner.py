@@ -35,14 +35,21 @@ top72 = ['L3_S32_F3850','L3_S33_F3855','L1_S24_F1723','L3_S33_F3865','L1_S24_F18
 
 colsnum = list(set(cols).union(set(top72)).union(set(top20)))
 usecols = ['L3_S30_F3759','L3_S30_F3809','L3_S33_F3857','L3_S30_F3769','L3_S30_F3804','L3_S30_F3754_max','L3_S30_F3754','L3_S30_F3554','L0_S0_F20','L3_S29_F3373','L3_S29_F3479_max','L3_S29_F3351','L3_S29_F3342','L3_S29_F3376','L3_S30_F3704','L3_S33_F3859','L3_S29_F3327','L3_S30_F3804_max','L3_S30_F3494','L3_S35_F3889','L3_S33_F3859_max','L3_S36_F3920','L3_S29_F3324','L3_S29_F3479','L3_S29_F3336','L3_S33_F3865','L3_S30_F3809_max','L3_S36_F3920_max','L3_S33_F3857_max','L3_S29_F3321','L0_S0_F20_max','L3_S29_F3373_max','L0_S1_F28','L3_S30_F3609','L3_S30_F3574','L0_S1_F28_max','L3_S29_F3330','L0_S0_F16','L0_S0_F18','L3_S29_F3382','L3_S30_F3574_max','L3_S30_F3604','L3_S30_F3609_max','L3_S30_F3769_max','L3_S32_F3854','L3_S30_F3494_max','L3_S29_F3354','L0_S0_F22','L3_S30_F3554_max','L3_S33_F3865_max','L3_S30_F3544','L3_S29_F3458','L0_S0_F2','L3_S29_F3342_max','L3_S29_F3370','L0_S2_F60','L3_S29_F3351_max','L1_S24_F1844','L0_S0_F18_max','L3_S29_F3436','L3_S30_F3524','L3_S29_F3430','L0_S3_F100','L0_S7_F138_max','L3_S29_F3327_max','L3_S30_F3504','L0_S12_F350','L3_S30_F3689','L1_S24_F1846','L3_S32_F3850','L0_S7_F138','L3_S30_F3689_max','L0_S5_F114','L0_S0_F2_max','L1_S24_F1571','L3_S29_F3407','L0_S2_F44_max','L0_S3_F100_max','L2_S26_F3113','L3_S29_F3382_max','L0_S2_F60_max','L3_S38_F3960','L0_S2_F44','L0_S6_F122','L0_S5_F116','L0_S12_F350_max','L3_S30_F3544_max','L3_S29_F3330_max','L0_S9_F165','L2_S26_F3117','L2_S26_F3062','L3_S38_F3956','L1_S24_F1842','L2_S26_F3121','L3_S38_F3952','L2_S26_F3073_max','L0_S0_F10','L0_S11_F294_max','L0_S5_F116_max','L2_S26_F3121_max','L1_S24_F1565','L2_S26_F3036','L1_S24_F1846_max','L0_S6_F132','L2_S26_F3047','L0_S13_F356_max','L2_S26_F3069','L0_S11_F294','L2_S26_F3073','L1_S24_F1723','L0_S17_F433_max','L0_S6_F122_max','L2_S26_F3047_max','L3_S29_F3407_max','L1_S24_F1778','L3_S32_F3850_max','L0_S10_F259','L0_S9_F165_max','L0_S13_F356','L0_S6_F132_max','L0_S10_F244','L3_S29_F3412','L1_S24_F1632','L3_S30_F3564','L3_S29_F3336_max','L1_S24_F1672','L0_S10_F259_max','L2_S26_F3036_max','L2_S26_F3062_max','L2_S27_F3210_max','L0_S0_F10_max','L2_S27_F3144_max','L1_S24_F1723_max','L0_S14_F370','L0_S18_F439_max','L2_S27_F3144','L1_S24_F1667','L0_S10_F219','L0_S14_F370_max','L0_S17_F433','L2_S27_F3133','L1_S24_F1838','L1_S24_F1647','L0_S19_F455_max','L0_S19_F455','L1_S24_F1695_max','L1_S24_F1632_max','L2_S27_F3129','L0_S23_F671','L3_S33_F3855','L0_S15_F418','L3_S29_F3461','L0_S10_F219_max','L2_S27_F3140_max','L2_S27_F3133_max','L1_S24_F1778_max','L0_S10_F244_max','L0_S23_F671_max','L1_S24_F1581','L1_S24_F1569','L3_S33_F3855_max','L0_S23_F619','L1_S24_F1604_max','L0_S15_F418_max','L0_S15_F403','L3_S29_F3467','L1_S24_F1565_max','L1_S24_F1838_max','L2_S27_F3129_max','L0_S18_F439','L2_S27_F3140','L1_S24_F1647_max','L3_S38_F3952_max','L0_S15_F403_max','L3_S41_F4016','L2_S27_F3210','L0_S14_F374_max','L3_S29_F3461_max','L3_S40_F3980','L3_S34_F3882','L3_S40_F3986','L0_S14_F374','L3_S32_F3851','L3_S29_F3317','L3_S33_F3861','L3_S43_F4080','L1_S24_F1695','L1_S24_F823','L3_S34_F3876','L3_S33_F3863','L3_S29_F3320','L3_S29_F3475','L1_S25_F2779','L3_S29_F3478','L3_S34_F3882_max','L1_S25_F1903','L1_S25_F1852','L1_S24_F1278','L3_S29_F3323','L1_S24_F675','L1_S24_F705','L3_S34_F3878','L3_S29_F3481','L1_S25_F1907','L1_S24_F710','L2_S28_F3224','L2_S28_F3228','L1_S24_F1114','L1_S25_F1912','L1_S24_F1675','L1_S25_F2141','L1_S25_F2099','L1_S25_F2229','L1_S24_F1604','L1_S25_F2958','L1_S24_F1282','L1_S25_F1981','L1_S25_F2884','L1_S25_F2104','L1_S25_F2968','L3_S29_F3326','L2_S28_F3285','L1_S25_F3013','L1_S24_F703','L1_S24_F1137','L1_S25_F2802','L1_S24_F1191','L1_S24_F1187','L2_S26_F3099','L1_S24_F1510','L2_S27_F3192','L1_S25_F1922','L1_S25_F2811','L3_S29_F3332','L1_S24_F1140','L1_S25_F1927','L1_S24_F1525','L1_S24_F1530','L1_S24_F1523','L2_S27_F3131','L1_S25_F2880','L1_S24_F1679','L1_S25_F2963','L1_S25_F2119']
-colsnum  = [c for c in colsnum if c in usecols]
+usecols = ['L3_S30_F3759', 'L3_S30_F3809', 'L3_S33_F3857', 'L3_S30_F3769', 'L3_S30_F3804', 'L3_S30_F3754_max', 'L3_S30_F3754', 'L3_S30_F3554', 'L0_S0_F20', 'L3_S29_F3373', 'L3_S29_F3479_max', 'L3_S29_F3351', 'L3_S29_F3342', 'L3_S29_F3376', 'L3_S30_F3704', 'L3_S33_F3859', 'L3_S29_F3327', 'L3_S30_F3804_max', 'L3_S30_F3494', 'L3_S35_F3889', 'L3_S33_F3859_max', 'L3_S36_F3920', 'L3_S29_F3324', 'L3_S29_F3479', 'L3_S29_F3336', 'L3_S33_F3865', 'L3_S30_F3809_max', 'L3_S36_F3920_max', 'L3_S33_F3857_max', 'L3_S29_F3321', 'L0_S0_F20_max', 'L3_S29_F3373_max', 'L0_S1_F28', 'L3_S30_F3609', 'L3_S30_F3574', 'L0_S1_F28_max', 'L3_S29_F3330', 'L0_S0_F16', 'L0_S0_F18', 'L3_S29_F3382', 'L3_S30_F3574_max', 'L3_S30_F3604', 'L3_S30_F3609_max', 'L3_S30_F3769_max', 'L3_S32_F3854', 'L3_S30_F3494_max', 'L3_S29_F3354', 'L0_S0_F22', 'L3_S30_F3554_max', 'L3_S33_F3865_max', 'L3_S30_F3544', 'L3_S29_F3458', 'L0_S0_F2', 'L3_S29_F3342_max', 'L3_S29_F3370', 'L0_S2_F60', 'L3_S29_F3351_max', 'L1_S24_F1844', 'L0_S0_F18_max', 'L3_S29_F3436', 'L3_S30_F3524', 'L3_S29_F3430', 'L0_S3_F100', 'L0_S7_F138_max', 'L3_S29_F3327_max', 'L3_S30_F3504', 'L0_S12_F350', 'L3_S30_F3689', 'L1_S24_F1846', 'L3_S32_F3850', 'L0_S7_F138', 'L3_S30_F3689_max', 'L0_S5_F114', 'L0_S0_F2_max', 'L1_S24_F1571', 'L3_S29_F3407', 'L0_S2_F44_max', 'L0_S3_F100_max', 'L2_S26_F3113', 'L3_S29_F3382_max', 'L0_S2_F60_max', 'L3_S38_F3960', 'L0_S2_F44', 'L0_S6_F122', 'L0_S5_F116', 'L0_S12_F350_max', 'L3_S30_F3544_max', 'L3_S29_F3330_max', 'L0_S9_F165', 'L2_S26_F3117', 'L2_S26_F3062', 'L3_S38_F3956', 'L1_S24_F1842', 'L2_S26_F3121', 'L3_S38_F3952', 'L2_S26_F3073_max', 'L0_S0_F10', 'L0_S11_F294_max', 'L0_S5_F116_max', 'L2_S26_F3121_max', 'L1_S24_F1565', 'L2_S26_F3036', 'L1_S24_F1846_max', 'L0_S6_F132', 'L2_S26_F3047', 'L0_S13_F356_max', 'L2_S26_F3069', 'L0_S11_F294', 'L2_S26_F3073', 'L1_S24_F1723', 'L0_S17_F433_max', 'L0_S6_F122_max', 'L2_S26_F3047_max', 'L3_S29_F3407_max', 'L1_S24_F1778', 'L3_S32_F3850_max', 'L0_S10_F259', 'L0_S9_F165_max', 'L0_S13_F356', 'L0_S6_F132_max', 'L0_S10_F244', 'L3_S29_F3412', 'L1_S24_F1632', 'L3_S30_F3564', 'L3_S29_F3336_max', 'L1_S24_F1672', 'L0_S10_F259_max', 'L2_S26_F3036_max', 'L2_S26_F3062_max', 'L2_S27_F3210_max', 'L0_S0_F10_max', 'L2_S27_F3144_max', 'L1_S24_F1723_max', 'L0_S14_F370', 'L0_S18_F439_max', 'L2_S27_F3144', 'L1_S24_F1667', 'L0_S10_F219', 'L0_S14_F370_max', 'L0_S17_F433', 'L2_S27_F3133', 'L1_S24_F1838', 'L1_S24_F1647', 'L0_S19_F455_max', 'L0_S19_F455', 'L1_S24_F1695_max', 'L1_S24_F1632_max', 'L2_S27_F3129', 'L0_S23_F671', 'L3_S33_F3855', 'L0_S15_F418', 'L3_S29_F3461', 'L0_S10_F219_max', 'L2_S27_F3140_max', 'L2_S27_F3133_max', 'L1_S24_F1778_max', 'L0_S10_F244_max', 'L0_S23_F671_max', 'L1_S24_F1581', 'L1_S24_F1569', 'L3_S33_F3855_max', 'L0_S23_F619', 'L1_S24_F1604_max', 'L0_S15_F418_max', 'L0_S15_F403', 'L3_S29_F3467', 'L1_S24_F1565_max', 'L1_S24_F1838_max', 'L2_S27_F3129_max', 'L0_S18_F439', 'L2_S27_F3140', 'L1_S24_F1647_max', 'L3_S38_F3952_max', 'L0_S15_F403_max', 'L3_S41_F4016', 'L2_S27_F3210', 'L0_S14_F374_max', 'L3_S29_F3461_max', 'L3_S40_F3980', 'L3_S34_F3882', 'L3_S40_F3986', 'L0_S14_F374', 'L3_S32_F3851', 'L3_S29_F3317', 'L3_S33_F3861', 'L3_S43_F4080', 'L1_S24_F1695', 'L1_S24_F823', 'L3_S34_F3876', 'L3_S33_F3863', 'L3_S29_F3320', 'L3_S29_F3475', 'L1_S25_F2779', 'L3_S29_F3478', 'L3_S34_F3882_max', 'L1_S25_F1903', 'L1_S25_F1852', 'L1_S24_F1278', 'L3_S29_F3323', 'L1_S24_F675', 'L1_S24_F705', 'L3_S34_F3878', 'L3_S29_F3481', 'L1_S25_F1907', 'L1_S24_F710', 'L2_S28_F3224', 'L2_S28_F3228', 'L1_S24_F1114', 'L1_S25_F1912', 'L1_S24_F1675', 'L1_S25_F2141', 'L1_S25_F2099', 'L1_S25_F2229', 'L1_S24_F1604', 'L1_S25_F2958', 'L1_S24_F1282', 'L1_S25_F1981', 'L1_S25_F2884', 'L1_S25_F2104', 'L1_S25_F2968', 'L3_S29_F3326', 'L2_S28_F3285', 'L1_S25_F3013', 'L1_S24_F703', 'L1_S24_F1137', 'L1_S25_F2802', 'L1_S24_F1191', 'L1_S24_F1187', 'L2_S26_F3099', 'L1_S24_F1510', 'L2_S27_F3192', 'L1_S25_F1922', 'L1_S25_F2811', 'L3_S29_F3332', 'L1_S24_F1140', 'L1_S25_F1927', 'L1_S24_F1525', 'L1_S24_F1530', 'L1_S24_F1523', 'L2_S27_F3131', 'L1_S25_F2880', 'L1_S24_F1679', 'L1_S25_F2963', 'L1_S25_F2119', 'S19_Max', 'S41_Max', 'S30_Max', 'S49_Max', 'S15_Max', 'S7_Max', 'S21_Max', 'S31_Max', 'S4_Min', 'S4_Max', 'S4_Diff', 'S25_Min', 'S25_Max', 'S25_Diff', 'S36_Max', 'S33_Max', 'S16_Max', 'S32_Max', 'S42_Max', 'S44_Max', 'S20_Max', 'S39_Max', 'S40_Max', 'S6_Max', 'S1_Min', 'S1_Max', 'S1_Diff', 'S14_Max', 'S12_Max', 'S46_Max', 'S24_Min', 'S24_Max', 'S24_Diff', 'S2_Min', 'S2_Max', 'S2_Diff', 'S23_Max', 'S48_Max', 'S3_Min', 'S3_Max', 'S3_Diff', 'S22_Max', 'S27_Max', 'S28_Max', 'S26_Max', 'S9_Max', 'S5_Min', 'S5_Max', 'S5_Diff', 'S10_Max', 'S0_Max', 'S18_Max', 'S37_Max', 'S50_Max', 'S17_Max', 'S51_Max', 'S47_Max', 'S35_Max', 'S8_Max', 'S13_Max', 'S11_Max', 'S38_Max', 'S43_Max', 'S29_Max', 'S34_Max', 'S45_Max']
+#colsnum  = [c for c in colsnum if c in usecols]
 #category top features
 colscat = ['L3_S29_F3317', 'L3_S32_F3854', 'L2_S27_F3131', 'L3_S47_F4141', 'L1_S24_F1525', 'L2_S26_F3038', 'L2_S27_F3192', 'L1_S25_F1852', 'L3_S29_F3320', 'L2_S27_F3135', 'L2_S26_F3099', 'L1_S24_F675', 'L1_S25_F2779', 'L3_S47_F4146', 'L3_S29_F3475', 'L1_S24_F1510', 'L1_S24_F710', 'L1_S24_F1530', 'L2_S26_F3042', 'L1_S24_F1675', 'L2_S26_F3082', 'L1_S25_F2519', 'L1_S25_F2802', 'L1_S25_F2958', 'L1_S25_F2963', 'L3_S29_F3478', 'L3_S29_F3323', 'L1_S24_F1584', 'L1_S25_F2806', 'L1_S25_F2523', 'L1_S24_F1114', 'L1_S24_F1191', 'L1_S25_F1981', 'L1_S24_F1187', 'L3_S32_F3851', 'L2_S26_F3045', 'L2_S27_F3138', 'L1_S25_F1907', 'L2_S26_F3085', 'L2_S26_F3049', 'L2_S27_F3142', 'L1_S25_F2496', 'L1_S25_F2099', 'L3_S29_F3481', 'L1_S25_F1912', 'L1_S25_F1903', 'L3_S47_F4156', 'L1_S24_F1136', 'L1_S24_F1592', 'L2_S28_F3224', 'L1_S24_F1679', 'L2_S26_F3053', 'L1_S24_F703', 'L1_S25_F2730', 'L1_S25_F1985', 'L1_S24_F1278', 'L1_S25_F2811', 'L3_S29_F3326', 'L3_S29_F3332', 'L1_S24_F705', 'L3_S47_F4161', 'L1_S25_F2141', 'L1_S24_F1588', 'L1_S25_F3013', 'L1_S25_F2968', 'L1_S24_F1064', 'L3_S47_F4151', 'L1_S24_F1282', 'L1_S24_F1200', 'L2_S26_F3091', 'L1_S24_F1683', 'L1_S24_F1140', 'L2_S26_F3088', 'L1_S24_F1537', 'L2_S26_F3057', 'L1_S24_F1693', 'L1_S25_F2880', 'L1_S24_F1137', 'L2_S27_F3146', 'L2_S26_F3064', 'L1_S24_F1286', 'L1_S25_F2884', 'L1_S24_F1597', 'L1_S24_F1291', 'L2_S28_F3228', 'L2_S27_F3157', 'L1_S25_F2993', 'L1_S24_F695', 'L1_S25_F2528', 'L1_S24_F1602', 'L1_S24_F1523', 'L1_S25_F1922', 'L1_S24_F1616', 'L1_S25_F2229', 'L1_S25_F2109', 'L1_S24_F1210', 'L1_S25_F2000', 'L1_S24_F1528', 'L1_S24_F1296', 'L1_S24_F1688', 'L1_S25_F2330', 'L2_S28_F3231', 'L1_S25_F1927', 'L1_S25_F2973', 'L1_S24_F1559', 'L1_S25_F2104', 'L1_S25_F2983', 'L1_S24_F1195', 'L1_S25_F2816', 'L1_S24_F1301', 'L1_S25_F2533', 'L1_S24_F1707', 'L1_S25_F2334', 'L1_S25_F2557', 'L1_S24_F1139', 'L1_S25_F2447', 'L1_S25_F2978', 'L1_S24_F823', 'L2_S28_F3285', 'L1_S25_F2119']
-colscat = [c for c in colscat if c in usecols]
+#colscat = [c for c in colscat if c in usecols]
 
+#allcols = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\train_numeric.csv', nrows=1).columns.values
+#np.random.shuffle(allcols)
 
+#colsnum = list(set(colsnum).union(set(allcols[:100])))
 
 cols = colsnum + colscat
+
+
+
 
 '''
 important_features = set(['L3_S30_F3759' ,'L3_S30_F3809' ,'L3_S30_F3754' ,'L3_S29_F3351' ,'L3_S29_F3479' ,'L3_S30_F3804' ,'L3_S30_F3704' ,'L3_S30_F3804_max' ,'L3_S30_F3494' ,'L3_S36_F3920' ,'L3_S30_F3554' ,'L3_S29_F3376' ,'L3_S30_F3754_max' ,'L3_S29_F3342' ,'L3_S30_F3769' ,'L0_S0_F20' ,'L3_S35_F3889' ,'L3_S29_F3373' ,'L3_S33_F3865' ,'L3_S29_F3327' ,'L3_S30_F3609' ,'L3_S33_F3857' ,'L3_S30_F3574' ,'L3_S29_F3336' ,'L3_S32_F3854' ,'L3_S29_F3382' ,'L3_S30_F3809_max' ,'L3_S33_F3859' ,'L3_S30_F3769_max' ,'L3_S29_F3324' ,'L3_S33_F3857_max' ,'L3_S29_F3321' ,'L3_S29_F3354' ,'L0_S1_F28_max' ,'L3_S36_F3920_max' ,'L3_S30_F3574_max' ,'L3_S33_F3865_max' ,'L3_S29_F3479_max' ,'L3_S30_F3544' ,'L3_S29_F3373_max' ,'L3_S29_F3330' ,'L0_S0_F16' ,'L3_S29_F3330_max' ,'L0_S12_F350' ,'L3_S33_F3859_max' ,'L0_S0_F20_max' ,'L3_S30_F3604' ,'L3_S38_F3952' ,'L3_S29_F3430' ,'L3_S32_F3850' ,'L3_S29_F3407' ,'L3_S30_F3554_max' ,'L0_S0_F22' ,'L3_S29_F3458' ,'L3_S30_F3524' ,'L3_S29_F3351_max' ,'L3_S29_F3342_max' ,'L0_S0_F18' ,'L3_S30_F3494_max' ,'L0_S1_F28' ,'L0_S0_F18_max' ,'L3_S30_F3609_max' ,'L3_S38_F3960' ,'L3_S32_F3850_max' ,'L3_S29_F3327_max' ,'L0_S13_F356' ,'L3_S30_F3504' ,'L0_S2_F44' ,'L0_S3_F100' ,'L0_S0_F2' ,'L0_S7_F138_max' ,'L3_S29_F3382_max' ,'L0_S0_F2_max' ,'L1_S24_F1844' ,'L0_S12_F350_max' ,'L2_S26_F3073_max' ,'L3_S30_F3689_max' ,'L3_S30_F3689' ,'L3_S38_F3956' ,'L0_S3_F100_max' ,'L0_S9_F165' ,'L1_S24_F1571' ,'L3_S29_F3407_max' ,'L2_S27_F3144_max' ,'L2_S26_F3036_max' ,'L3_S29_F3436' ,'L0_S2_F60' ,'L0_S5_F116_max' ,'L2_S26_F3036' ,'L1_S24_F1846' ,'L2_S26_F3047' ,'L2_S26_F3069' ,'L1_S24_F1844_L1_S24_F1723' ,'L2_S26_F3113' ,'L2_S26_F3117' ,'L3_S29_F3412' ,'L3_S30_F3544_max' ,'L0_S6_F132_max' ,'L2_S26_F3121' ,'L1_S24_F1565' ,'L0_S6_F132' ,'L0_S0_F10_max' ,'L1_S24_F1632_L1_S24_F1844' ,'L3_S29_F3461' ,'L0_S6_F122_max' ,'L0_S17_F433_max' ,'L2_S26_F3121_max' ,'L0_S7_F138' ,'L3_S29_F3370' ,'L0_S5_F114' ,'L2_S26_F3073' ,'L2_S26_F3047_max' ,'L2_S26_F3062' ,'L3_S30_F3564' ,'L0_S10_F259' ,'L0_S2_F44_max' ,'L0_S0_F10' ,'L2_S27_F3210_max' ,'L2_S27_F3129' ,'L1_S24_F1842' ,'L0_S13_F356_max' ,'L0_S14_F370' ,'L2_S26_F3062_max' ,'L1_S24_F1778' ,'L0_S6_F122' ,'L0_S11_F294_max' ,'L0_S9_F165_max' ,'L0_S5_F116' ,'L1_S24_F1846_max' ,'L3_S29_F3336_max' ,'L0_S17_F433' ,'L0_S2_F60_max' ,'L0_S19_F455_max' ,'L0_S18_F439_max' ,'L0_S10_F259_max' ,'L2_S27_F3129_max' ,'L1_S24_F1723' ,'L3_S33_F3855' ,'L0_S11_F294' ,'L0_S18_F439' ,'L0_S14_F370_max' ,'L1_S24_F1844_L1_S24_F1632' ,'L0_S10_F219' ,'L0_S23_F671' ,'L1_S24_F1632' ,'L1_S24_F1695_L1_S24_F1723' ,'L0_S10_F219_max' ,'L1_S24_F1838' ,'L0_S10_F244' ,'L2_S27_F3133_max' ,'L1_S24_F1778_max' ,'L0_S19_F455' ,'L1_S24_F1723_L1_S24_F1844' ,'L0_S15_F418_max' ,'L1_S24_F1723_L1_S24_F1695' ,'L0_S23_F671_max' ,'L0_S15_F403_max' ,'L3_S38_F3952_max' ,'L3_S43_F4080' ,'L2_S27_F3140_max' ,'L1_S24_F1846_L1_S24_F1604' ,'L0_S15_F418' ,'L3_S29_F3467' ,'L2_S27_F3210' ,'L0_S23_F619' ,'L2_S27_F3144' ,'L1_S24_F1672_L1_S24_F1844' ,'L2_S27_F3133' ,'L1_S24_F1672' ,'L3_S33_F3855_max' ,'L2_S27_F3140' ,'L3_S29_F3461_max' ,'L1_S24_F1565_max' ,'L0_S10_F244_max' ,'L1_S24_F1569' ,'L3_S40_F3980' ,'L1_S24_F1695_L1_S24_F1846' ,'L1_S24_F1723_max' ,'L1_S24_F1846_L1_S24_F1695' ,'L0_S14_F374' ,'L1_S24_F1632_L1_S24_F1842' ,'L1_S24_F1842_L1_S24_F1723' ,'L1_S24_F1647' ,'L1_S24_F1632_L1_S24_F1667' ,'L1_S24_F1581' ,'L0_S15_F403' ,'L1_S24_F1667' ,'L1_S24_F1632_L1_S24_F1604' ,'L1_S24_F1846_L1_S24_F1667' ,'L0_S14_F374_max' ,'L1_S24_F1842_L1_S24_F1632' ,'L3_S41_F4016' ,'L3_S34_F3882_max' ,'L3_S34_F3882' ,'L3_S29_F3317' ,'L3_S32_F3851' ,'L1_S24_F1723_L1_S24_F1842' ,'L1_S24_F1838_max' ,'L1_S24_F1647_max' ,'L3_S40_F3986' ,'L1_S24_F1604_L1_S24_F1846' ,'L3_S33_F3863' ,'L3_S33_F3861' ,'L1_S24_F1844_L1_S24_F1672' ,'L1_S24_F1632_max' ,'L3_S29_F3320' ,'L1_S24_F1647_L1_S24_F1604' ,'L3_S29_F3475' ,'L1_S24_F675' ,'L3_S34_F3876' ,'L1_S24_F1667_L1_S24_F1846' ,'L3_S32_F3850Nan' ,'L1_S24_F1667_L1_S24_F1632' ,'L3_S34_F3878' ,'L1_S24_F1695_max' ,'L1_S25_F1852' ,'L1_S24_F1278' ,'L1_S25_F2779' ,'L1_S24_F1604_L1_S24_F1632' ,'L1_S25_F1903' ,'L1_S25_F2229' ,'L1_S24_F1604_L1_S24_F1647' ,'L1_S24_F1525' ,'L3_S29_F3478' ,'L1_S25_F1907' ,'L1_S24_F705' ,'L1_S24_F703' ,'L2_S28_F3228' ,'L1_S24_F1604' ,'L2_S28_F3224' ,'L1_S24_F1530' ,'L3_S29_F3323' ,'L1_S25_F1981' ,'L1_S24_F1137' ,'L3_S29_F3332' ,'L1_S24_F710' ,'L3_S29_F3481' ,'L3_S47_F4141' ,'L1_S25_F2141' ,'L1_S24_F1064' ,'L1_S24_F1191' ,'L1_S24_F1510' ,'L1_S24_F1187' ,'L1_S24_F1114' ,'L1_S24_F1675' ,'L1_S24_F1695' ,'L1_S24_F1291' ,'L1_S25_F1912' ,'L1_S25_F2958' ,'L1_S25_F2109' ,'L1_S24_F1136' ,'L1_S25_F2099' ,'L1_S25_F2802'])
@@ -54,7 +61,8 @@ cols = list(set(cols).intersection(important_features))
 '''
 
 def getdate(f):
-    return '_'.join(f.split('_')[:2]) + '_D' + str(int(f.split('_')[2].replace('F',''))+1)
+    return f
+    #return '_'.join(f.split('_')[:2]) + '_D' + str(int(f.split('_')[2].replace('F',''))+1)
 
 
 datefeats = list(set(pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\train_date.csv', nrows=1).columns.values).intersection(set([getdate(f) for f in colsnum])))
@@ -178,22 +186,30 @@ def output(modelObj):
 def processNumCat(outputDir):
     global cols
     global config
+    global usecols
 
     if not os.path.exists(outputDir):
         os.mkdir(outputDir)
 
-    date = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\train_date.csv', usecols = ['Id'] + datefeats)
-
-
+    
     cat = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\train_categorical.2.csv', usecols = ['Id'] + colscat)
-    #train = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\train_categorical.2.csv', nrows=500000)
-
     num = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\train_numeric.csv', usecols=['Id', 'Response'] + colsnum)
 
+    usecols = usecols + [f for f in date.columns.values if '_' in f]
     train = pd.merge(num, cat, on=['Id'])
-    train = pd.merge(train, date, on=['Id'])
 
-    del cat,num,date
+    if 'date' in config:
+        date = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_minmax.pkl','rb'))
+        train = pd.merge(train, date, on=['Id'])
+        del date
+
+    if 'leak' in config:
+        leak = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_leak.pkl','rb'))
+        train = pd.merge(train, leak, on=['Id'])
+        del leak
+
+    del num
+    del cat
     gc.collect()
 
     # create max value features
@@ -275,14 +291,27 @@ def processNumCat(outputDir):
     cvdata.rename(columns={'Response': 'label'}, inplace=True)
 
 
-    date = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\test_date.csv', usecols=['Id'] + datefeats)
+    
     cat = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\test_categorical.2.csv', usecols = ['Id'] + colscat)
     num = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\test_numeric.csv', usecols = ['Id'] + colsnum)
-
+        
+    
+    
     test = pd.merge(num, cat, on=['Id'])
-    test = pd.merge(test, date, on=['Id'])
+    if 'date' in config:
+        date = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_minmax.pkl','rb'))
+        test = pd.merge(test, date, on=['Id'])
+        del date
 
-    del cat, num, date
+    if 'leak' in config:
+        leak = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_leak.pkl','rb'))
+        test = pd.merge(test, leak, on=['Id'])
+        del leak
+
+
+    del num    
+    del cat
+    
     test.rename(columns={'Id': 'label'}, inplace=True)
 
 
@@ -390,21 +419,23 @@ def xgbNumCat():
 
     
     p['learning_rate'] = [0.01]
-    p['n_estimators'] = [200, 175]
-    p['max_depth'] = [11, 12]    
+    p['n_estimators'] = [200]
+    p['max_depth'] = [11]    
     p['objective'] = ['binary:logistic']
-    p['colsample_bytree'] = [0.7, 0.8, 0.9]
+    p['colsample_bytree'] = [0.9,1,0.8]
     p['silent'] = [False]
-    p['subsample'] = [0.85, 0.75]
-    p['base_score'] = [0.003, 0.002]
+    p['subsample'] = [0.85]
+    p['base_score'] = [0.003]
 
     
-    config.add('tsfeatures')
     
-    usecols = None
+    
+    #usecols = usecols
+    config.add('date')
+    config.add('leak')
 
-    o = BoschOrchestrator(r'E:\Git\ML\Kaggle_Bosch\Data\TSFeat4\\', 
-                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputXGBTSFeat\\', 
+    o = BoschOrchestrator(r'E:\Git\ML\Kaggle_Bosch\Data\Try5\\', 
+                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputXGBTry5\\', 
                                        p, TrainModel.XGBClassifier, output, 
                                        resetData=False, threads=1, debug=True, 
                                        getData=processNumCat, selectCols=usecols)
