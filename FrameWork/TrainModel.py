@@ -86,11 +86,11 @@ class TrainModel(object):
 
     def cvpredict(self):
         
-        self.precitionsCV = self.model.predict(self.xCV.values)
+        self.precitionsCV = self.model.predict(self.xCV[self.xTrain.columns.values].values)
 
         self.stats['cvErrorBeforeFreeform'] = self.metric()
 
-        self.precitionsCV = self.freeform(self.xCV, self.precitionsCV)
+        self.precitionsCV = self.freeform(self.xCV[self.xTrain.columns.values], self.precitionsCV)
 
         self.stats['cvError'] = self.metric()
 
@@ -204,8 +204,8 @@ class XGBClassifier(TrainModel):
 
 
         self.model.fit(self.xTrain.values, self.yTrain.values,\
-            verbose=True, early_stopping_rounds=30,\
-            eval_metric='auc', eval_set=[tuple((self.xCV.values, self.yCV.values))])
+            verbose=True, early_stopping_rounds=20,\
+            eval_metric='auc', eval_set=[tuple((self.xCV[self.xTrain.columns.values].values, self.yCV.values))])
 
 
         importance = {}

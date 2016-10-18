@@ -123,22 +123,22 @@ class Orchestrator:
         cv = pickle.load(open(self.dataDir + 'cv.pkl', 'rb'))
         test = pickle.load(open(self.dataDir + 'test.pkl', 'rb'))
 
-        cols = [i for i in train.columns.values.tolist() if i not in self.exceptCols]
+        
+        # we make train and cv have same columns
 
+        cols = [i for i in train.columns.values.tolist() if i not in self.exceptCols]
         train = train[cols]
-        cv = cv[cols]
-        test = test[cols]
+        
 
         if self.selectCols is not None:
             cols = self.selectCols + ['label']
             train = train[cols]
-            cv = cv[cols]
-            test = test[cols]
-
+        
         cols = [i for i in train.columns.values.tolist()if i not in ['label']]
-
         self.xTrain = train[cols]
         self.yTrain = train['label']
+
+        cols = [i for i in cv.columns.values.tolist()if i not in ['label']]
         self.xCV = cv[cols]
         self.yCV = cv['label']
         self.test = test

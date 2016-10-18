@@ -125,7 +125,7 @@ def output(modelObj):
     fileProb = open(modelObj.prefix + '.prob', 'w')
     model = modelObj.model
 
-    prob = model.predict_proba(modelObj.xCV.values)
+    prob = model.predict_proba(modelObj.xCV[modelObj.xTrain.columns.values].values)
 
     auc = metrics.roc_auc_score(modelObj.yCV.values, prob[:,1])
 
@@ -156,10 +156,12 @@ def output(modelObj):
             bestT = np.percentile(prob, t)
             bestPR = pr
             bestCF = cf
-
-
     modelObj.statsFile.write('BEST: threshold {} mcc {} auc {} pr {} tn {}  fp {} fn {} tp {}\n'.format( bestT, bestScore, auc, bestPR,
                                                                                                         bestCF[0][0], bestCF[0][1], bestCF[1][0], bestCF[1][1]))
+    cvOut = pd.DataFrame()
+    cvOut['Id'] = modelObj.xCV['Id']
+    cvOut['Response'] = prob
+    cvOut.to_csv(open(modelObj.prefix + '.cvprob', 'w'), index=False, delimiter=',', header=True)
 
 
     test['prob'] = model.predict_proba(test[modelObj.xTrain.columns.values].values)[:,1]
@@ -192,11 +194,10 @@ def processNumCat(outputDir):
         os.mkdir(outputDir)
 
     
-    cat = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\train_categorical.2.csv', usecols = ['Id'] + colscat)
-    num = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\train_numeric.csv', usecols=['Id', 'Response'] + colsnum)
+    if 'basic' in config:
+        train = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_basic.pkl','rb'))    
+        
 
-    usecols = usecols + [f for f in date.columns.values if '_' in f]
-    train = pd.merge(num, cat, on=['Id'])
 
     if 'date' in config:
         date = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_minmax.pkl','rb'))
@@ -204,173 +205,87 @@ def processNumCat(outputDir):
         del date
 
     if 'leak' in config:
-        leak = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_leak.pkl','rb'))
+        leak = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_leak2.pkl','rb'))
         train = pd.merge(train, leak, on=['Id'])
         del leak
 
-    del num
-    del cat
-    gc.collect()
+    if 'dups' in config:
+        dups = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_dup2.pkl','rb'))
+        train = pd.merge(train, dups, on=['Id'])
+        del dups
 
-    # create max value features
-    maxVals  = train[top72].max()
-    minVals = train[top72].min()
-    for f in maxVals.index.values:
-        train[f+'_max'] = maxVals[f] - train[f]
-        if 'min' in config:
-            train[f+'_min'] = train[f] - minVals[f]
-
-    if 'nan' in config:
-        train['L3_S32_F3850Nan'] = np.isnan(train['L3_S32_F3850'])
-        train['L3_S33_F3859Nan'] = np.isnan(train['L3_S33_F3859'])
-        train['L3_S33_F3857Nan'] = np.isnan(train['L3_S33_F3857'])
-        train['L3_S33_F3865Nan'] = np.isnan(train['L3_S33_F3865'])
+    if 'motoki' in config:
+        motoki = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_motoki.pkl','rb'))
+        
+        cols = set(motoki.columns.values)
+        cols = set(train.columns.values).intersection(cols)
+        cols = [f for f in motoki.columns.values if f not in cols] + ['Id']
+        motoki = motoki[cols]
+        train = pd.merge(train, motoki, on=['Id'])
+        del motoki
 
     if 'inter' in config:
-        train['L1_S24_F1846_L1_S24_F1667']= train['L1_S24_F1846'] * train['L1_S24_F1667']
-        train['L1_S24_F1846_L1_S24_F1695']= train['L1_S24_F1846'] * train['L1_S24_F1695']
-        train['L1_S24_F1846_L1_S24_F1604']= train['L1_S24_F1846'] * train['L1_S24_F1604']
-        train['L1_S24_F1672_L1_S24_F1844']= train['L1_S24_F1672'] * train['L1_S24_F1844']
-        train['L1_S24_F1632_L1_S24_F1842']= train['L1_S24_F1632'] * train['L1_S24_F1842']
-        train['L1_S24_F1632_L1_S24_F1667']= train['L1_S24_F1632'] * train['L1_S24_F1667']
-        train['L1_S24_F1632_L1_S24_F1844']= train['L1_S24_F1632'] * train['L1_S24_F1844']
-        train['L1_S24_F1632_L1_S24_F1604']= train['L1_S24_F1632'] * train['L1_S24_F1604']
-        train['L1_S24_F1647_L1_S24_F1604']= train['L1_S24_F1647'] * train['L1_S24_F1604']
-        train['L1_S24_F1842_L1_S24_F1632']= train['L1_S24_F1842'] * train['L1_S24_F1632']
-        train['L1_S24_F1842_L1_S24_F1723']= train['L1_S24_F1842'] * train['L1_S24_F1723']
-        train['L1_S24_F1667_L1_S24_F1846']= train['L1_S24_F1667'] * train['L1_S24_F1846']
-        train['L1_S24_F1667_L1_S24_F1632']= train['L1_S24_F1667'] * train['L1_S24_F1632']
-        train['L1_S24_F1695_L1_S24_F1846']= train['L1_S24_F1695'] * train['L1_S24_F1846']
-        train['L1_S24_F1695_L1_S24_F1723']= train['L1_S24_F1695'] * train['L1_S24_F1723']
-        train['L1_S24_F1844_L1_S24_F1672']= train['L1_S24_F1844'] * train['L1_S24_F1672']
-        train['L1_S24_F1844_L1_S24_F1632']= train['L1_S24_F1844'] * train['L1_S24_F1632']
-        train['L1_S24_F1844_L1_S24_F1723']= train['L1_S24_F1844'] * train['L1_S24_F1723']
-        train['L1_S24_F1723_L1_S24_F1842']= train['L1_S24_F1723'] * train['L1_S24_F1842']
-        train['L1_S24_F1723_L1_S24_F1695']= train['L1_S24_F1723'] * train['L1_S24_F1695']
-        train['L1_S24_F1723_L1_S24_F1844']= train['L1_S24_F1723'] * train['L1_S24_F1844']
-        train['L1_S24_F1604_L1_S24_F1846']= train['L1_S24_F1604'] * train['L1_S24_F1846']
-        train['L1_S24_F1604_L1_S24_F1632']= train['L1_S24_F1604'] * train['L1_S24_F1632']
-        train['L1_S24_F1604_L1_S24_F1647']= train['L1_S24_F1604'] * train['L1_S24_F1647']
-        
-    if 'hasstation' in config:
-        features = train.columns.values
-        lines = (set([f.split('_')[0] for f in features]))
-        stations = (set([f.split('_')[1] for f in features if '_' in f]))
+        inter = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_inter.pkl','rb'))
+        train = pd.merge(train, inter, on=['Id'])
+        del inter
 
-        for s in stations:
-            fs = [f for f in features if s in f]            
-            train['Has'+s] = np.max(np.isnan(train[fs]),axis=1)
-            train['Has'+s] = train['Has'+s].astype(int)
+    gc.collect()
 
     
-
-    print(train.columns.names)
-
     
-
-    cols = train.columns.values
-    cols = [c for c in cols if c != 'label']
-
     train[colsnum] += 2
     train.fillna(0, inplace=True)
+    
 
     cv = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\cv2.pkl', 'rb'))
-    #cv = train.index[[i % 5 == 2 for i in train.index.tolist()]]
-    #cv = random.sample(train.index.tolist(), int(train.shape[0] * (1.0/5.0)))
 
     cvdata = train.loc[cv]
     train= train.drop(cv)
 
-    if 'tsfeatures' in config:
-        createTsIndex(train, colsnum)
-        train = timestampFeatures(train)
-        cvdata = timestampFeatures(cvdata)
 
-    del train['Id'],cvdata['Id']
-    train.rename(columns={'Response': 'label'}, inplace=True)
-    cvdata.rename(columns={'Response': 'label'}, inplace=True)
+    del train['Id']
 
+    if 'basic' in config:
+        test = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_basic.pkl','rb'))
 
-    
-    cat = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\test_categorical.2.csv', usecols = ['Id'] + colscat)
-    num = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\test_numeric.csv', usecols = ['Id'] + colsnum)
-        
-    
-    
-    test = pd.merge(num, cat, on=['Id'])
     if 'date' in config:
         date = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_minmax.pkl','rb'))
         test = pd.merge(test, date, on=['Id'])
         del date
 
     if 'leak' in config:
-        leak = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_leak.pkl','rb'))
+        leak = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_leak2.pkl','rb'))
         test = pd.merge(test, leak, on=['Id'])
         del leak
 
+    if 'dups' in config:
+        dups = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_dup2.pkl','rb'))
+        test = pd.merge(test, dups, on=['Id'])
+        del dups
 
-    del num    
-    del cat
-    
-    test.rename(columns={'Id': 'label'}, inplace=True)
+    if 'motoki' in config:
+        motoki = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_motoki.pkl','rb'))
 
+        cols = set(motoki.columns.values)
+        cols = set(test.columns.values).intersection(cols)
+        cols = [f for f in motoki.columns.values if f not in cols] + ['Id']
+        motoki = motoki[cols]
 
-    # maxVal features
-    for f in maxVals.index.values:
-        test[f+'_max'] = maxVals[f] - test[f]
-        if 'min' in config:
-            test[f+'_min'] = test[f] - minVals[f]
-
-    if 'nan' in config:
-        test['L3_S32_F3850Nan'] = np.isnan(test['L3_S32_F3850'])
-        #test['L3_S24_F1844Nan'] = np.isnan(test['L3_S24_F1844'])
-        #test['L3_S24_F1846Nan'] = np.isnan(test['L3_S24_F1846'])
-        test['L3_S33_F3859Nan'] = np.isnan(test['L3_S33_F3859'])
-        test['L3_S33_F3857Nan'] = np.isnan(test['L3_S33_F3857'])
-        test['L3_S33_F3865Nan'] = np.isnan(test['L3_S33_F3865'])
+        test = pd.merge(test, motoki, on=['Id'])
+        del motoki
 
     if 'inter' in config:
-        test['L1_S24_F1846_L1_S24_F1667']= test['L1_S24_F1846'] * test['L1_S24_F1667']
-        test['L1_S24_F1846_L1_S24_F1695']= test['L1_S24_F1846'] * test['L1_S24_F1695']
-        test['L1_S24_F1846_L1_S24_F1604']= test['L1_S24_F1846'] * test['L1_S24_F1604']
-        test['L1_S24_F1672_L1_S24_F1844']= test['L1_S24_F1672'] * test['L1_S24_F1844']
-        test['L1_S24_F1632_L1_S24_F1842']= test['L1_S24_F1632'] * test['L1_S24_F1842']
-        test['L1_S24_F1632_L1_S24_F1667']= test['L1_S24_F1632'] * test['L1_S24_F1667']
-        test['L1_S24_F1632_L1_S24_F1844']= test['L1_S24_F1632'] * test['L1_S24_F1844']
-        test['L1_S24_F1632_L1_S24_F1604']= test['L1_S24_F1632'] * test['L1_S24_F1604']
-        test['L1_S24_F1647_L1_S24_F1604']= test['L1_S24_F1647'] * test['L1_S24_F1604']
-        test['L1_S24_F1842_L1_S24_F1632']= test['L1_S24_F1842'] * test['L1_S24_F1632']
-        test['L1_S24_F1842_L1_S24_F1723']= test['L1_S24_F1842'] * test['L1_S24_F1723']
-        test['L1_S24_F1667_L1_S24_F1846']= test['L1_S24_F1667'] * test['L1_S24_F1846']
-        test['L1_S24_F1667_L1_S24_F1632']= test['L1_S24_F1667'] * test['L1_S24_F1632']
-        test['L1_S24_F1695_L1_S24_F1846']= test['L1_S24_F1695'] * test['L1_S24_F1846']
-        test['L1_S24_F1695_L1_S24_F1723']= test['L1_S24_F1695'] * test['L1_S24_F1723']
-        test['L1_S24_F1844_L1_S24_F1672']= test['L1_S24_F1844'] * test['L1_S24_F1672']
-        test['L1_S24_F1844_L1_S24_F1632']= test['L1_S24_F1844'] * test['L1_S24_F1632']
-        test['L1_S24_F1844_L1_S24_F1723']= test['L1_S24_F1844'] * test['L1_S24_F1723']
-        test['L1_S24_F1723_L1_S24_F1842']= test['L1_S24_F1723'] * test['L1_S24_F1842']
-        test['L1_S24_F1723_L1_S24_F1695']= test['L1_S24_F1723'] * test['L1_S24_F1695']
-        test['L1_S24_F1723_L1_S24_F1844']= test['L1_S24_F1723'] * test['L1_S24_F1844']
-        test['L1_S24_F1604_L1_S24_F1846']= test['L1_S24_F1604'] * test['L1_S24_F1846']
-        test['L1_S24_F1604_L1_S24_F1632']= test['L1_S24_F1604'] * test['L1_S24_F1632']
-        test['L1_S24_F1604_L1_S24_F1647']= test['L1_S24_F1604'] * test['L1_S24_F1647']
-   
-    if 'hasstation' in config:
-        features = test.columns.values
-        lines = (set([f.split('_')[0] for f in features]))
-        stations = (set([f.split('_')[1] for f in features if '_' in f]))
+        inter = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_inter.pkl','rb'))
+        test = pd.merge(test, inter, on=['Id'])
+        del inter
 
-        for s in stations:
-            fs = [f for f in features if s in f]            
-            test['Has'+s] = np.max(np.isnan(test[fs]),axis=1)
-            test['Has'+s] = test['Has'+s].astype(int)
+    test['label'] = test['Id']
+    del test['Id']
 
-    
 
     test[colsnum] += 2
     test.fillna(0, inplace=True)
-    if 'tsfeatures' in config:        
-        test = timestampFeatures(test)
+    
 
     return train, cvdata, test
 
@@ -422,23 +337,28 @@ def xgbNumCat():
     p['n_estimators'] = [200]
     p['max_depth'] = [11]    
     p['objective'] = ['binary:logistic']
-    p['colsample_bytree'] = [0.9,1,0.8]
+    p['colsample_bytree'] = [0.9, 0.85, 0.5]
     p['silent'] = [False]
-    p['subsample'] = [0.85]
-    p['base_score'] = [0.003]
+    p['subsample'] = [0.95, 0.85, 1]
+    p['base_score'] = [0.003, 0.004, 0.002]
 
     
     
     
     #usecols = usecols
+    config.add('basic')
     config.add('date')
     config.add('leak')
+    config.add('dups')
+    config.add('motoki')
+    config.add('inter')
 
-    o = BoschOrchestrator(r'E:\Git\ML\Kaggle_Bosch\Data\Try5\\', 
-                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputXGBTry5\\', 
+
+    o = BoschOrchestrator(r'E:\Git\ML\Kaggle_Bosch\Data\WithInter1\\', 
+                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputXGBWithInter1\\', 
                                        p, TrainModel.XGBClassifier, output, 
                                        resetData=False, threads=1, debug=True, 
-                                       getData=processNumCat, selectCols=usecols)
+                                       getData=processNumCat, selectCols=None)
 
 
     
