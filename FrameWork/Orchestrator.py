@@ -123,7 +123,9 @@ class Orchestrator:
         cv = pickle.load(open(self.dataDir + 'cv.pkl', 'rb'))
         test = pickle.load(open(self.dataDir + 'test.pkl', 'rb'))
 
-        
+        if 'Id' not in cv.columns.values:
+            cv['Id'] = np.nan
+                
         # we make train and cv have same columns
 
         cols = [i for i in train.columns.values.tolist() if i not in self.exceptCols]

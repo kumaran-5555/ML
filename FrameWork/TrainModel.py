@@ -5,7 +5,8 @@ import math
 from sklearn import linear_model
 from sklearn import ensemble as skensemble
 from sklearn import metrics
-from sktlc import ensemble
+from sklearn import ensemble
+#from sktlc import ensemble
 import numpy as np
 import xgboost as xgb
 
@@ -105,7 +106,7 @@ class TrainModel(object):
         for final measurement
         '''
 
-        self.stats['totalFinalPredictions'] = self.finalPredictFunc(self)
+        self.stats['return'] = self.finalPredictFunc(self)
 
 
 
@@ -191,6 +192,26 @@ class XGB(TrainModel):
 
     def metric2(self, pred, true):
         return metrics.mean_squared_error(true, pred)
+
+class RandomForest(TrainModel):
+    def train(self, **kargs):
+        self.model = ensemble.RandomForestClassifier(**kargs)
+
+        self.model.fit(self.xTrain.values, self.yTrain.values)
+
+    def metric(self):
+        return metrics.auc(self.yCV.values, self.precitionsCV, reorder=True)
+
+
+
+class ExtraTrees(TrainModel):
+    def train(self, **kargs):
+        self.model = ensemble.ExtraTreesClassifier(**kargs)
+        self.model.fit(self.xTrain.values, self.yTrain.values)
+
+    def metric(self):
+        return metrics.auc(self.yCV.values, self.precitionsCV, reorder=True)
+
 
         
 class XGBClassifier(TrainModel):

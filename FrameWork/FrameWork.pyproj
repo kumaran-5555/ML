@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>b586caa4-7f52-45d4-90c5-81cb2978a317</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>BoschRunner.py</StartupFile>
+    <StartupFile>Misc.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -27,7 +27,19 @@
     <Compile Include="BoschRunner.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="FeatureExploration.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="FeaturePrunning.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="GrupoRunner.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Interactions.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Misc.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Orchestrator.py">

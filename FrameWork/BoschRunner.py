@@ -1,6 +1,6 @@
 import TrainModel
 import Orchestrator
-
+import FeaturePrunning
 from sklearn import preprocessing
 from sklearn import linear_model
 from sklearn import metrics
@@ -124,47 +124,65 @@ def output(modelObj):
     file = modelObj.outputFile
     fileProb = open(modelObj.prefix + '.prob', 'w')
     model = modelObj.model
-
-    prob = model.predict_proba(modelObj.xCV[modelObj.xTrain.columns.values].values)
-
-    auc = metrics.roc_auc_score(modelObj.yCV.values, prob[:,1])
-
-    modelObj.stats['auc'] = auc
-    prob = prob[:,1]
-
-    thresholds =  np.arange(99.6, 99.9, 0.025)
-
-
     bestPR = None
     bestScore =  0
     bestCF = None
     bestT = 0
-    modelObj.statsFile.write('\n')
-    for t in thresholds:
-        temp = np.copy(prob)
-        temp[np.where(prob > np.percentile(prob, t))] = 1
-        temp[np.where(prob <= np.percentile(prob, t))] = 0
+    bestIteration = None
 
-        score = metrics.matthews_corrcoef(modelObj.yCV.values, temp)
-        pr = metrics.precision_recall_fscore_support(modelObj.yCV.values, temp, pos_label=1, average='binary')
-        cf = metrics.confusion_matrix(modelObj.yCV.values, temp)
-        modelObj.statsFile.write('threshold {} mcc {} auc {} pr {} tn {} fp {} fn {} tp {}\n'.format( np.percentile(prob, t), score, auc,  pr,
-                                                                                                        cf[0][0], cf[0][1], cf[1][0], cf[1][1] ))
+    isXgb = True
 
-        if score > bestScore:
-            bestScore = score
-            bestT = np.percentile(prob, t)
-            bestPR = pr
-            bestCF = cf
-    modelObj.statsFile.write('BEST: threshold {} mcc {} auc {} pr {} tn {}  fp {} fn {} tp {}\n'.format( bestT, bestScore, auc, bestPR,
+    try:
+        temp = model.best_iteration
+
+    except:
+        isXgb = False
+        model.best_iteration = 1
+
+    for iter in range(max(0, model.best_iteration+19), model.best_iteration+20):
+        if isXgb:
+            prob = model.predict_proba(modelObj.xCV[modelObj.xTrain.columns.values].values, ntree_limit=iter)
+        else:
+            prob = model.predict_proba(modelObj.xCV[modelObj.xTrain.columns.values].values)
+        auc = metrics.roc_auc_score(modelObj.yCV.values, prob[:,1])
+        modelObj.stats['auc'] = auc
+        prob = prob[:,1]
+        thresholds =  np.arange(99.6, 99.9, 0.025)
+        modelObj.statsFile.write('\n')
+        for t in thresholds:
+            temp = np.copy(prob)
+            temp[np.where(prob > np.percentile(prob, t))] = 1
+            temp[np.where(prob <= np.percentile(prob, t))] = 0
+
+            score = metrics.matthews_corrcoef(modelObj.yCV.values, temp)
+            pr = metrics.precision_recall_fscore_support(modelObj.yCV.values, temp, pos_label=1, average='binary')
+            cf = metrics.confusion_matrix(modelObj.yCV.values, temp)
+            modelObj.statsFile.write('iter {} threshold {} mcc {} auc {} pr {} tn {} fp {} fn {} tp {}\n'.format( iter, np.percentile(prob, t), score, auc,  pr,
+                                                                                                            cf[0][0], cf[0][1], cf[1][0], cf[1][1] ))
+
+            if score > bestScore:
+                bestScore = score
+                bestT = np.percentile(prob, t)
+                bestPR = pr
+                bestCF = cf
+                bestIteration = iter
+
+    modelObj.statsFile.write('BEST: iter {} threshold {} mcc {} auc {} pr {} tn {}  fp {} fn {} tp {}\n'.format( iter, bestT, bestScore, auc, bestPR,    
                                                                                                         bestCF[0][0], bestCF[0][1], bestCF[1][0], bestCF[1][1]))
+
+    if isXgb:
+        prob = model.predict_proba(modelObj.xCV[modelObj.xTrain.columns.values].values, ntree_limit=bestIteration)[:,1]
+    else:
+        prob = model.predict_proba(modelObj.xCV[modelObj.xTrain.columns.values].values)[:,1]
     cvOut = pd.DataFrame()
     cvOut['Id'] = modelObj.xCV['Id']
     cvOut['Response'] = prob
     cvOut.to_csv(open(modelObj.prefix + '.cvprob', 'w'), index=False, delimiter=',', header=True)
 
-
-    test['prob'] = model.predict_proba(test[modelObj.xTrain.columns.values].values)[:,1]
+    if isXgb:
+        test['prob'] = model.predict_proba(test[modelObj.xTrain.columns.values].values, ntree_limit=bestIteration)[:,1]
+    else:
+        test['prob'] = model.predict_proba(test[modelObj.xTrain.columns.values].values)[:,1]
     test['predict'] = test['prob'].apply(lambda x: 1 if x > bestT else 0)
     test[['label','prob']].to_csv(fileProb, index=False, delimiter=',', header=True)
     fileProb.flush()
@@ -174,7 +192,7 @@ def output(modelObj):
     temp.to_csv(file, index=False, delimiter=',', header=False)
     file.flush()
 
-    return test.shape[0]
+    return bestScore
 
 
 
@@ -195,12 +213,15 @@ def processNumCat(outputDir):
 
     
     if 'basic' in config:
-        train = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_basic.pkl','rb'))    
+        train = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_basic.pkl','rb'))
+        numeric = ['Id', 'L0_S0_F10', 'L0_S0_F10_max', 'L0_S0_F16', 'L0_S0_F18', 'L0_S0_F18_max', 'L0_S0_F2', 'L0_S0_F20', 'L0_S0_F20_max', 'L0_S0_F22', 'L0_S0_F2_max', 'L0_S10_F219', 'L0_S10_F219_max', 'L0_S10_F244', 'L0_S10_F244_max', 'L0_S10_F259', 'L0_S10_F259_max', 'L0_S11_F294', 'L0_S11_F294_max', 'L0_S12_F350', 'L0_S12_F350_max', 'L0_S13_F356', 'L0_S13_F356_max', 'L0_S14_F370', 'L0_S14_F370_max', 'L0_S14_F374', 'L0_S14_F374_max', 'L0_S15_F403', 'L0_S15_F403_max', 'L0_S15_F418', 'L0_S15_F418_max', 'L0_S17_F433', 'L0_S17_F433_max', 'L0_S18_F439', 'L0_S18_F439_max', 'L0_S19_F455', 'L0_S19_F455_max', 'L0_S1_F28', 'L0_S1_F28_max', 'L0_S23_F619', 'L0_S23_F671', 'L0_S23_F671_max', 'L0_S2_F44', 'L0_S2_F44_max', 'L0_S2_F60', 'L0_S2_F60_max', 'L0_S3_F100', 'L0_S3_F100_max', 'L0_S5_F114', 'L0_S5_F116', 'L0_S5_F116_max', 'L0_S6_F122', 'L0_S6_F122_max', 'L0_S6_F132', 'L0_S6_F132_max', 'L0_S7_F138', 'L0_S7_F138_max', 'L0_S9_F165', 'L0_S9_F165_max', 'L1_S24_F1565', 'L1_S24_F1565_max', 'L1_S24_F1569', 'L1_S24_F1571', 'L1_S24_F1581', 'L1_S24_F1604', 'L1_S24_F1604_max', 'L1_S24_F1632', 'L1_S24_F1632_max', 'L1_S24_F1647', 'L1_S24_F1647_max', 'L1_S24_F1667', 'L1_S24_F1672', 'L1_S24_F1695', 'L1_S24_F1695_max', 'L1_S24_F1723', 'L1_S24_F1723_max', 'L1_S24_F1778', 'L1_S24_F1778_max', 'L1_S24_F1838', 'L1_S24_F1838_max', 'L1_S24_F1842', 'L1_S24_F1844', 'L1_S24_F1846', 'L1_S24_F1846_max', 'L2_S26_F3036', 'L2_S26_F3036_max', 'L2_S26_F3047', 'L2_S26_F3047_max', 'L2_S26_F3062', 'L2_S26_F3062_max', 'L2_S26_F3069', 'L2_S26_F3073', 'L2_S26_F3073_max', 'L2_S26_F3113', 'L2_S26_F3117', 'L2_S26_F3121', 'L2_S26_F3121_max', 'L2_S27_F3129', 'L2_S27_F3129_max', 'L2_S27_F3133', 'L2_S27_F3133_max', 'L2_S27_F3140', 'L2_S27_F3140_max', 'L2_S27_F3144', 'L2_S27_F3144_max', 'L2_S27_F3210', 'L2_S27_F3210_max', 'L3_S29_F3321', 'L3_S29_F3324', 'L3_S29_F3327', 'L3_S29_F3327_max', 'L3_S29_F3330', 'L3_S29_F3330_max', 'L3_S29_F3336', 'L3_S29_F3336_max', 'L3_S29_F3342', 'L3_S29_F3342_max', 'L3_S29_F3351', 'L3_S29_F3351_max', 'L3_S29_F3354', 'L3_S29_F3370', 'L3_S29_F3373', 'L3_S29_F3373_max', 'L3_S29_F3376', 'L3_S29_F3382', 'L3_S29_F3382_max', 'L3_S29_F3407', 'L3_S29_F3407_max', 'L3_S29_F3412', 'L3_S29_F3430', 'L3_S29_F3436', 'L3_S29_F3458', 'L3_S29_F3461', 'L3_S29_F3461_max', 'L3_S29_F3467', 'L3_S29_F3479', 'L3_S29_F3479_max', 'L3_S30_F3494', 'L3_S30_F3494_max', 'L3_S30_F3504', 'L3_S30_F3524', 'L3_S30_F3544', 'L3_S30_F3544_max', 'L3_S30_F3554', 'L3_S30_F3554_max', 'L3_S30_F3564', 'L3_S30_F3574', 'L3_S30_F3574_max', 'L3_S30_F3604', 'L3_S30_F3609', 'L3_S30_F3609_max', 'L3_S30_F3689', 'L3_S30_F3689_max', 'L3_S30_F3704', 'L3_S30_F3754', 'L3_S30_F3754_max', 'L3_S30_F3759', 'L3_S30_F3769', 'L3_S30_F3769_max', 'L3_S30_F3804', 'L3_S30_F3804_max', 'L3_S30_F3809', 'L3_S30_F3809_max', 'L3_S32_F3850', 'L3_S32_F3850_max', 'L3_S33_F3855', 'L3_S33_F3855_max', 'L3_S33_F3857', 'L3_S33_F3857_max', 'L3_S33_F3859', 'L3_S33_F3859_max', 'L3_S33_F3861', 'L3_S33_F3863', 'L3_S33_F3865', 'L3_S33_F3865_max', 'L3_S34_F3876', 'L3_S34_F3878', 'L3_S34_F3882', 'L3_S34_F3882_max', 'L3_S35_F3889', 'L3_S36_F3920', 'L3_S36_F3920_max', 'L3_S38_F3952', 'L3_S38_F3952_max', 'L3_S38_F3956', 'L3_S38_F3960', 'L3_S40_F3980', 'L3_S40_F3986', 'L3_S41_F4016', 'L3_S43_F4080']
+        #train = train[numeric + ['label']]
+   
         
 
 
     if 'date' in config:
-        date = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_minmax.pkl','rb'))
+        date = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_minmax.2.pkl','rb'))
         train = pd.merge(train, date, on=['Id'])
         del date
 
@@ -212,10 +233,22 @@ def processNumCat(outputDir):
     if 'dups' in config:
         dups = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_dup2.pkl','rb'))
         train = pd.merge(train, dups, on=['Id'])
+
+        #train['MeanResponse2'] = train['MeanResponse'] * train['SortedIdDiff']
         del dups
 
     if 'motoki' in config:
         motoki = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_motoki.pkl','rb'))
+        
+        cols = set(motoki.columns.values)
+        cols = set(train.columns.values).intersection(cols)
+        cols = [f for f in motoki.columns.values if f not in cols] + ['Id']
+        motoki = motoki[cols]
+        train = pd.merge(train, motoki, on=['Id'])
+        del motoki
+
+    if 'motoki2' in config:
+        motoki = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_motoki2.pkl','rb'))
         
         cols = set(motoki.columns.values)
         cols = set(train.columns.values).intersection(cols)
@@ -229,6 +262,59 @@ def processNumCat(outputDir):
         train = pd.merge(train, inter, on=['Id'])
         del inter
 
+    if 'qcut' in config:
+        temp = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_qcut.pkl','rb'))
+        train = pd.merge(train, temp, on=['Id'])
+        del temp
+
+    if 'type' in config:
+        temp = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_type.pkl','rb'))
+        train = pd.merge(train, temp, on=['Id'])
+        del temp
+
+    if 'inter4' in config:
+        temp = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_inter4.pkl','rb'))
+        train = pd.merge(train, temp, on=['Id'])
+        del temp
+
+    if 'nextprev' in config:
+        temp = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_nextprev.pkl','rb'))
+        train = pd.merge(train, temp, on=['Id'])
+        del temp
+
+    if 'magic2' in config:
+        temp = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\magic2.csv')
+        train = pd.merge(train, temp, on=['Id'])
+
+    if 'char' in config:
+        temp = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\train_char.pkl','rb'))
+        train = pd.merge(train, temp, on=['Id'])
+        del temp
+
+    if 'prevnextId' in config:
+        temp = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\prevnextId.pkl','rb'))
+        train = pd.merge(train, temp, on=['Id'])
+        del temp
+
+    if 'time1' in config:
+        temp = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\time1.pkl','rb'))
+        train = pd.merge(train, temp, on=['Id'])
+        del temp
+    if 'prevnextnum' in config:
+        temp = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\prevnextnum.pkl','rb'))
+        train = pd.merge(train, temp, on=['Id'])
+        del temp
+
+    if 'numcount' in config:
+        temp = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\numcount.pkl','rb'))
+        train = pd.merge(train, temp, on=['Id'])
+        del temp
+
+    if 'zscale' in config:
+        temp = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\zscale.pkl','rb'))
+        train = pd.merge(train, temp, on=['Id'])
+        del temp
+    
     gc.collect()
 
     
@@ -247,9 +333,10 @@ def processNumCat(outputDir):
 
     if 'basic' in config:
         test = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_basic.pkl','rb'))
+        #test = test[numeric]
 
     if 'date' in config:
-        date = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_minmax.pkl','rb'))
+        date = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_minmax.2.pkl','rb'))
         test = pd.merge(test, date, on=['Id'])
         del date
 
@@ -261,6 +348,7 @@ def processNumCat(outputDir):
     if 'dups' in config:
         dups = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_dup2.pkl','rb'))
         test = pd.merge(test, dups, on=['Id'])
+        #test['MeanResponse2'] = test['MeanResponse'] * test['SortedIdDiff']
         del dups
 
     if 'motoki' in config:
@@ -274,10 +362,75 @@ def processNumCat(outputDir):
         test = pd.merge(test, motoki, on=['Id'])
         del motoki
 
+    if 'motoki2' in config:
+        motoki = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_motoki2.pkl','rb'))
+
+        cols = set(motoki.columns.values)
+        cols = set(test.columns.values).intersection(cols)
+        cols = [f for f in motoki.columns.values if f not in cols] + ['Id']
+        motoki = motoki[cols]
+
+        test = pd.merge(test, motoki, on=['Id'])
+        del motoki
+
     if 'inter' in config:
         inter = pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_inter.pkl','rb'))
         test = pd.merge(test, inter, on=['Id'])
         del inter
+
+    if 'qcut' in config:
+        temp= pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_qcut.pkl','rb'))
+        test = pd.merge(test, temp, on=['Id'])
+        del temp
+
+    if 'type' in config:
+        temp= pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_type.pkl','rb'))
+        test = pd.merge(test, temp, on=['Id'])
+        del temp
+    if 'inter4' in config:
+        temp= pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_inter4.pkl','rb'))
+        test = pd.merge(test, temp, on=['Id'])
+        del temp
+
+    if 'nextprev' in config:
+        temp= pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_nextprev.pkl','rb'))
+        test = pd.merge(test, temp, on=['Id'])
+        del temp
+
+    if 'magic2' in config:
+        temp = pd.read_csv(r'E:\Git\ML\Kaggle_Bosch\Data\magic2.csv')
+        test = pd.merge(test, temp, on=['Id'])
+
+    if 'char' in config:
+        temp= pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\test_char.pkl','rb'))
+        test = pd.merge(test, temp, on=['Id'])
+        del temp
+
+    if 'prevnextId' in config:
+        temp= pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\prevnextId.pkl','rb'))
+        test = pd.merge(test, temp, on=['Id'])
+        del temp
+
+    if 'time1' in config:
+        temp= pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\time1.pkl','rb'))
+        test = pd.merge(test, temp, on=['Id'])
+        del temp
+
+    
+    if 'prevnextnum' in config:
+        temp= pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\prevnextnum.pkl','rb'))
+        test = pd.merge(test, temp, on=['Id'])
+        del temp
+
+    if 'numcount' in config:
+        temp= pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\numcount.pkl','rb'))
+        test = pd.merge(test, temp, on=['Id'])
+        del temp
+
+    if 'zscale' in config:
+        temp= pickle.load(open(r'E:\Git\ML\Kaggle_Bosch\Data\zscale.pkl','rb'))
+        test = pd.merge(test, temp, on=['Id'])
+        del temp
 
     test['label'] = test['Id']
     del test['Id']
@@ -303,7 +456,7 @@ def xgbCategorical():
     #p['base_estimator'] = [linear_model.SGDRegressor]
     p['learning_rate'] = [0.01, 0.007, 0.005]
     #p['n_estimators'] = [200,150]
-    p['max_depth'] = [7,9,12]    
+    p['max_depth'] = [11]    
     p['objective'] = ['binary:logistic']
     p['colsample_bytree'] = [0.5, 0.7, 0.9]
     p['silent'] = [False]
@@ -333,14 +486,14 @@ def xgbNumCat():
     p['base_score'] = [0.003, 0.002]
 
     
-    p['learning_rate'] = [0.01]
-    p['n_estimators'] = [200]
-    p['max_depth'] = [11]    
+    p['learning_rate'] = [0.02]
+    p['n_estimators'] = [300]
+    p['max_depth'] = [11]
     p['objective'] = ['binary:logistic']
-    p['colsample_bytree'] = [0.9, 0.85, 0.5]
+    p['colsample_bytree'] = [0.95]
     p['silent'] = [False]
-    p['subsample'] = [0.95, 0.85, 1]
-    p['base_score'] = [0.003, 0.004, 0.002]
+    p['subsample'] = [1]
+    p['base_score'] = [0.003]
 
     
     
@@ -350,55 +503,137 @@ def xgbNumCat():
     config.add('date')
     config.add('leak')
     config.add('dups')
-    config.add('motoki')
+    #config.add('motoki')
+    #config.add('motoki2')
     config.add('inter')
+    config.add('magic2')
+    config.add('char')
+    #config.add('qcut')
+    #config.add('type')
+    config.add('inter4')
+    #config.add('nextprev')
+    config.add('prevnextId')
+    config.add('time1')
+    config.add('prevnextnum')
+    #config.add('numcount') #OVERFITS
+    config.add('zscale')
 
-
-    o = BoschOrchestrator(r'E:\Git\ML\Kaggle_Bosch\Data\WithInter1\\', 
-                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputXGBWithInter1\\', 
+    o = BoschOrchestrator(r'E:\Git\ML\Kaggle_Bosch\Data\WithMagic18\\',
+                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputXGBWithMagic18\\', 
                                        p, TrainModel.XGBClassifier, output, 
                                        resetData=False, threads=1, debug=True, 
-                                       getData=processNumCat, selectCols=None)
+                                       getData=processNumCat, selectCols=None, exceptCols=[])
+
 
 
     
     o.train()
-    '''
-    config.add('nan')
 
-    o = BoschOrchestrator('E:\Git\ML\Kaggle_Bosch\Data\DataV7NumCatMax.\\', 
-                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputXGBNumCatMax.3\\', 
-                                       p, TrainModel.XGBClassifier, output, 
-                                       resetData=False, threads=1, debug=True, 
-                                       getData=processNumCat, selectCols=None)
-
-
-    
-    o.train()
-    '''
-
-    
-def xgb():
+def xgbNumCatRandom():
     p = {}
-    #p['base_estimator'] = [linear_model.SGDRegressor]
-    p['learning_rate'] = [0.01, 0.007, 0.005]
-    #p['n_estimators'] = [200,150]
-    p['max_depth'] = [7,9,12]    
-    p['objective'] = ['binary:logistic']
-    p['colsample_bytree'] = [0.5, 0.7, 0.9]
-    p['silent'] = [False]
-    p['subsample'] = [0.85, 1]
-    p['base_score'] = [0.003, 0.005, 0.006]
     
+    p['n_estimators'] = [50, 75, 100, 150]
+    p['max_depth'] = [7,9,11]
+    p['min_samples_leaf'] = [10, 20, 30]
+    p['min_samples_split'] = [10, 20, 30]
+    p['n_jobs'] = [7]
 
-    o = BoschOrchestrator('E:\Git\ML\Kaggle_Bosch\Data\DataV7NumAllFeats\\', 
-                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputXGBNumAllFeats\\', 
-                                       p, TrainModel.XGBClassifier, output, 
+    
+    
+    
+    #usecols = usecols
+    config.add('basic')
+    config.add('date')
+    config.add('leak')
+    config.add('dups')
+    #config.add('motoki')
+    config.add('motoki2')
+    config.add('inter')
+    #config.add('qcut')
+    #config.add('type')
+    config.add('inter4')
+    config.add('nextprev')
+    config.add('nextprev')
+
+
+    o = BoschOrchestrator(r'E:\Git\ML\Kaggle_Bosch\Data\WithInter1\\',
+                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputRandWithInter1\\', 
+                                       p, TrainModel.RandomForest, output, 
                                        resetData=False, threads=1, debug=True, 
-                                       getData=process2)
+                                       getData=processNumCat, selectCols=None, exceptCols=[])
+
 
     
     o.train()
+
+def xgbNumCatExtra():
+    p = {}
+    
+    p['n_estimators'] = [50, 75, 100, 150]
+    p['max_features'] = [0.7,0.9]
+    p['max_depth'] = [7,9,11]
+    p['min_samples_leaf'] = [10, 20, 30]
+    p['min_samples_split'] = [10, 20, 30]
+    p['n_jobs'] = [10]
+    p['verbose'] = [3]
+
+    #p['class_weight'] = ['balanced']
+
+
+
+    
+    
+    
+    #usecols = usecols
+    config.add('basic')
+    config.add('date')
+    config.add('leak')
+    config.add('dups')
+    #config.add('motoki')
+    config.add('motoki2')
+    config.add('inter')
+    #config.add('qcut')
+    #config.add('type')
+    config.add('inter4')
+    config.add('nextprev')
+
+
+    o = BoschOrchestrator(r'E:\Git\ML\Kaggle_Bosch\Data\WithInter1\\',
+                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputExtraWithInter1\\', 
+                                       p, TrainModel.ExtraTrees, output, 
+                                       resetData=False, threads=1, debug=True, 
+                                       getData=processNumCat, selectCols=None, exceptCols=[])
+
+
+    
+    o.train()
+
+
+def tryPrunning():
+    p = {}
+
+    p['learning_rate'] = 0.01
+    p['n_estimators'] = 200
+    p['max_depth'] = 11  
+    p['objective'] = 'binary:logistic'
+    p['colsample_bytree'] = 0.9
+    p['silent'] = False
+    p['subsample'] = 1
+    p['base_score'] = 0.002
+
+    
+    top = ['SortedIdDiff', 'minDefectRate', 'SortedIdDiffReverse', 'avg_nbRowsR1', 'avg_DefectRate', 'maxDefectRate', 'maxnbRowsR1', 'durationTS', 'N_47', 'L3_S30_F3754_max', 'RN_58', 'L3_S30_F3759', 'L3_S33_F3857_max', 'L0_S0_F20_max', 'L3_S36_F3920', 'L0_S1_F28', 'L3_S30_F3754', 'L3_S30_F3809', 'Station_32_minStationDefectRate', 'L3_S33_F3859', 'L3_S33_F3857', 'L3_S30_F3604', 'L3_S30_F3769', 'L3_S30_F3609', 'L3_S29_F3373', 'L3_S30_F3804', 'MeanResponse', 'L3_S29_F3376', 'L0_S0_F2', 'L3_S30_F3574', 'L3_S33_F3865_max', 'L0_S0_F20', 'L3_S36_F3920_max', 'L3_S29_F3354', 'L3_S29_F3321', 'all_Max', 'RN_81', 'L3_S30_F3609_max', 'L3_S30_F3574_max', 'L3_S30_F3494', 'Station_38_minStationDefectRate', 'L3_S29_F3351_max', 'L0_S6_F132', 'L3_S33_F3859_max', 'S35_Max', 'L3_S32_F3854', 'S32_Max', 'L3_S30_F3554', 'L0_S1_F28_max', 'L3_S30_F3524', 'S36_Max', 'L0_S11_F294_max', 'L3_S30_F3554_max', 'L3_S29_F3479_max', 'L0_S2_F60', 'L3_S29_F3479', 'L3_S33_F3865', 'S4_Min', 'S6_Max', 'L3_S29_F3342', 'L3_S30_F3769_max', 'L3_S29_F3324', 'L3_S29_F3373_max', 'L3_S30_F3809_max', 'L3_S30_F3804_max', 'L0_S0_F18', 'IdDiffReverse', 'L3_S29_F3351', 'L3_S38_F3960', 'L3_S35_F3889', 'L0_S2_F60_max', 'L3_S30_F3544', 'L0_S13_F356_max', 'L0_S0_F16', 'S1_Min', 'Station_35_minStationDefectRate', 'L0_S6_F122', 'L3_S29_F3382', 'L0_S5_F116_max', 'S38_Max', 'Station_34_minStationDefectRate', 'S5_Min', 'Station_34_minNbStationItemsR1', 'L2_S26_F3069', 'L0_S19_F455_max', 'L0_S2_F44', 'L0_S9_F165', 'L0_S10_F259', 'S2_Min', 'L1_S24_F1844_L1_S24_F1723', 'L0_S7_F138', 'L3_S29_F3330', 'L3_S30_F3494_max', 'S1_Max', 'L3_S30_F3704', 'S48_Max', 'IdDiff', 'S7_Max', 'L0_S18_F439_max', 'L0_S7_F138_max', 'L0_S9_F165_max', 'L3_S29_F3327', 'L0_S10_F219', 'L3_S30_F3544_max', 'L0_S0_F18_max', 'S34_Max', 'L1_S24_F1632_L1_S24_F1667', 'L0_S11_F294', 'L0_S5_F116', 'L3_S30_F3689_max', 'S44_Max', 'L3_S29_F3336', 'L0_S12_F350', 'S3_Min', 'S29_Max', 'Duration', 'L2_S27_F3210', 'L0_S10_F244', 'L0_S3_F100_max', 'S33_Max', 'L2_S26_F3073', 'L2_S26_F3113', 'L1_S24_F1844', 'L2_S26_F3073_max', 'L0_S5_F114', 'L0_S15_F418', 'L0_S6_F122_max', 'L3_S29_F3436', 'Station_33_minNbStationItemsR1', 'L0_S6_F132_max', 'L1_S24_F1632_L1_S24_F1842', 'L2_S26_F3036', 'L2_S26_F3047_max', 'L3_S29_F3382_max', 'Station_33_minStationDefectRate', 'L0_S10_F259_max', 'L3_S30_F3564', 'L0_S0_F22', 'L3_S30_F3504', 'L3_S29_F3430', 'L3_S29_F3330_max', 'S24_Min', 'L1_S24_F1778_max', 'L0_S0_F10_max', 'S27_Max', 'L3_S32_F3850', 'S30_Max', 'L3_S30_F3689', 'RN_86', 'minTS', 'L1_S24_F1846_L1_S24_F1667', 'L3_S29_F3327_max', 'L2_S26_F3117', 'Station_26_minStationDefectRate', 'S26_Max', 'L1_S24_F1571', 'L0_S17_F433', 'L1_S24_F1565', 'S23_Max', 'L0_S3_F100', 'L2_S27_F3210_max', 'S21_Max', 'L2_S27_F3140_max', 'L0_S2_F44_max', 'S24_Diff', 'L3_S29_F3342_max', 'S13_Max', 'L2_S26_F3062', 'L0_S14_F370', 'L3_S38_F3956', 'L0_S0_F2_max', 'S22_Max', 'L2_S26_F3121', 'L0_S14_F370_max', 'S1_Diff', 'L2_S26_F3047', 'S0_Max', 'S8_Max', 'L0_S12_F350_max', 'L0_S17_F433_max', 'L0_S0_F10', 'S9_Max', 'L0_S15_F403', 'L1_S24_F1632_L1_S24_F1844', 'S37_Max', 'L2_S26_F3121_max', 'L3_S29_F3336_max', 'S51_Max', 'L2_S27_F3129_max', 'TL3_S32_F3854', 'L3_S29_F3461', 'L3_S33_F3855_max', 'L0_S10_F219_max', 'S40_Max', 'L2_S26_F3062_max', 'T2', 'S19_Max', 'S14_Max', 'L2_S27_F3133_max', 'all_Min', 'L1_S24_F1632', 'L2_S27_F3133', 'L1_S24_F1695_L1_S24_F1723', 'Station_24_minStationDefectRate', 'L2_S27_F3140', 'L2_S26_F3036_max', 'S2_Diff', 'L0_S13_F356', 'L3_S29_F3407', 'L1_S24_F1632_L1_S24_F1604', 'L2_S27_F3129', 'L0_S10_F244_max', 'L1_S24_F1672', 'L2_S27_F3144', 'L3_S29_F3461_max', 'L1_S24_F1581', 'L3_S29_F3407_max', 'L1_S24_F1846_max', 'L1_S24_F1667', 'S24_Max', 'L3_S40_F3986', 'S3_Max', 'Station_34_maxStationDefectRate', 'L1_S24_F1842', 'Station_38_minNbStationItemsR1', 'S20_Max', 'S4_Max', 'L1_S24_F1846_L1_S24_F1604', 'L3_S40_F3980', 'L0_S14_F374_max', 'L0_S15_F403_max', 'nbHashR1', 'Station_32_maxStationDefectRate', 'L1_S24_F1846_L1_S24_F1695', 'L0_S23_F671_max', 'S18_Max', 'L0_S18_F439', 'S5_Max', 'L1_S25_F1852', 'L1_S24_F1778', 'L1_S24_F1672_L1_S24_F1844', 'Station_32_minNbStationItemsR1', 'L1_S25_F2099', 'L0_S19_F455', 'L1_S24_F1723_L1_S24_F1844', 'S15_Max', 'L1_S24_F1565_max', 'L2_S27_F3144_max', 'L1_S24_F1846', 'L3_S43_F4080', 'L1_S24_F1647_max', 'L3_S29_F3458', 'L1_S24_F1842_L1_S24_F1632', 'L1_S24_F1842_L1_S24_F1723', 'S2_Max', 'L0_S15_F418_max', 'S16_Max', 'S49_Max', 'L3_S32_F3850_max', 'L1_S24_F1723_max', 'S3_Diff', 'Station_32_avgStationDefectRate', 'L1_S24_F1647', 'L3_S29_F3475', 'L1_S24_F1844_L1_S24_F1632', 'L3_S33_F3855', 'L1_S24_F1632_max', 'L1_S24_F1137', 'L1_S24_F1723_L1_S24_F1695', 'L1_S24_F1667_L1_S24_F1846', 'L3_S29_F3370', 'S4_Diff', 'L1_S24_F1667_L1_S24_F1632', 'L0_S23_F671', 'L0_S23_F619', 'L2_S28_F3285', 'L0_S14_F374', 'L3_S38_F3952_max', 'L1_S24_F1838', 'L3_S38_F3952', 'L1_S24_F1844_L1_S24_F1672', 'L3_S29_F3412', 'L3_S29_F3317', 'L1_S24_F1695_L1_S24_F1846', 'Station_33_maxNbStationItemsR1', 'L1_S24_F1647_L1_S24_F1604', 'S5_Diff', 'L1_S25_F1981', 'Station_33_maxStationDefectRate', 'L1_S24_F1569', 'L3_S34_F3882_max', 'L3_S34_F3882', 'L1_S24_F1114', 'L3_S29_F3467', 'previousResponse', 'L1_S25_F2141', 'Station_24_avgStationDefectRate', 'L1_S24_F1723_L1_S24_F1842', 'L1_S25_F1903', 'L3_S41_F4016', 'L3_S33_F3861', 'L1_S24_F1191', 'L3_S29_F3478', 'L1_S24_F1604_L1_S24_F1632', 'L1_S24_F1140', 'L1_S24_F1604_L1_S24_F1846', 'nextResponse', 'L1_S24_F1838_max', 'L1_S24_F710', 'L1_S24_F1282', 'L1_S25_F2968', 'L3_S33_F3863', 'L1_S25_F3013', 'S25_Max', 'L1_S25_F1907', 'L1_S25_F2229', 'L2_S28_F3224', 'S17_Max', 'L1_S25_F2958', 'L3_S29_F3332', 'L1_S24_F1604_max', 'S12_Max', 'L1_S25_F2802', 'L3_S29_F3323', 'L1_S24_F1695', 'L3_S32_F3851', 'S45_Max', 'L1_S25_F1912', 'L1_S24_F1530', 'L2_S27_F3131', 'L1_S24_F705', 'S50_Max', 'S42_Max', 'L3_S34_F3878', 'L1_S24_F675', 'L3_S34_F3876', 'L1_S24_F1525', 'L1_S24_F703', 'L1_S24_F1604', 'S28_Max', 'L1_S24_F1723', 'L1_S24_F1604_L1_S24_F1647', 'L1_S25_F2811', 'L1_S24_F823', 'L1_S25_F2880', 'S41_Max', 'S39_Max', 'L1_S25_F1922', 'L1_S24_F1510', 'L1_S24_F1695_max', 'L3_S29_F3326', 'L3_S29_F3481', 'L1_S25_F2884', 'S10_Max', 'L2_S27_F3192', 'L1_S24_F1523', 'L1_S24_F1679', 'L1_S25_F2779', 'L1_S25_F2104', 'S43_Max', 'L1_S24_F1187', 'S47_Max', 'L1_S24_F1278', 'L1_S25_F1927', 'L2_S28_F3228', 'S46_Max', 'maxTS', 'L1_S25_F2963', 'S11_Max', 'L2_S26_F3099', 'L1_S25_F2119', 'L1_S24_F1675', 'S31_Max', 'L3_S29_F3320']
+    prune = top[::-1]
+
+
+    o = FeaturePrunning.FeaturePrunner(r'E:\Git\ML\Kaggle_Bosch\Data\WithInter1\\', 
+                                       r'E:\Git\ML\Kaggle_Bosch\Data\OutputPrunning1\\', 
+                                       p, TrainModel.XGBClassifier, output, prune)
+
+
+    
+    o.train()
+
 
 
 
@@ -407,6 +642,11 @@ if __name__ == '__main__':
     #xgbfeatureselection()
     #xgbCategorical()
     xgbNumCat()
+    #xgbNumCatRandom()
+    #xgbNumCatExtra()
+
+    #tryPrunning()
+
 
 
 
