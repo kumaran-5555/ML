@@ -15,7 +15,7 @@ end
 fprintf(1, 'Epochs %d\n', epochs);
 % SET HYPERPARAMETERS HERE.
 batchsize = 100;  % Mini-batch size.
-learning_rate = 100;  % Learning rate; default = 0.1.
+learning_rate = 0.1;  % Learning rate; default = 0.1.
 momentum = 0.9;  % Momentum; default = 0.9.
 numhid1 = 50;  % Dimensionality of embedding space; default = 50.
 numhid2 = 200;  % Number of units in hidden layer; default = 200.
@@ -33,9 +33,14 @@ show_validation_CE_after = 1000;
 vocab_size = size(vocab, 2);
 
 % INITIALIZE WEIGHTS AND BIASES.
+% modify for quesion three
 word_embedding_weights = init_wt * randn(vocab_size, numhid1);
 embed_to_hid_weights = init_wt * randn(numwords * numhid1, numhid2);
 hid_to_output_weights = init_wt * randn(numhid2, vocab_size);
+%word_embedding_weights = init_wt * zeros(vocab_size, numhid1);
+%embed_to_hid_weights = init_wt * zeros(numwords * numhid1, numhid2);
+%hid_to_output_weights = init_wt * zeros(numhid2, vocab_size);
+
 hid_bias = zeros(numhid2, 1);
 output_bias = zeros(vocab_size, 1);
 
@@ -88,7 +93,7 @@ for epoch = 1:epochs
     if OctaveMode
       fflush(1);
     end
-
+    
     % BACK PROPAGATE.
     %% OUTPUT LAYER.
     hid_to_output_weights_gradient =  hidden_layer_state * error_deriv';
