@@ -1,0 +1,30 @@
+GNU Octave, version 3.8.1
+Copyright (C) 2014 John W. Eaton and others.
+This is free software; see the source code for copying conditions.
+There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  For details, type 'warranty'.
+
+Octave was configured for "x86_64-pc-linux-gnu".
+
+Additional information about Octave is available at http://www.octave.org.
+
+Please contribute if you find this software useful.
+For more information, visit http://www.octave.org/get-involved.html
+
+Read http://www.octave.org/bugs.html to learn how to submit bug reports.
+For information about changes from previous versions, type 'news'.
+
+0.000000,10,70,0.002000,0.000000,0,4	training		2.304283		0.900000	validation		2.304338		0.900000	test		2.304352		0.900000	
+0.000000,10,70,0.002000,0.900000,0,4	training		2.300135		0.900000	validation		2.300422		0.900000	test		2.300287		0.900000	
+0.000000,10,70,0.010000,0.000000,0,4	training		2.302117		0.877000	validation		2.302284		0.882000	test		2.302230		0.881222	
+0.000000,10,70,0.010000,0.900000,0,4	training		2.284022		0.685000	validation		2.285377		0.702000	test		2.284538		0.693444	
+0.000000,10,70,0.050000,0.000000,0,4	training		2.292967		0.868000	validation		2.293696		0.871000	test		2.293294		0.872111	
+0.000000,10,70,0.050000,0.900000,0,4	training		2.008606		0.731000	validation		2.018598		0.749000	test		2.008179		0.724778	
+0.000000,10,70,0.200000,0.000000,0,4	training		2.228969		0.671000	validation		2.232504		0.697000	test		2.229988		0.679333	
+0.000000,10,70,0.200000,0.900000,0,4	training		1.083429		0.310000	validation		1.122502		0.358000	test		1.097623		0.348889	
+0.000000,10,70,1.000000,0.000000,0,4	training		1.598844		0.587000	validation		1.608040		0.600000	test		1.596059		0.584444	
+0.000000,10,70,1.000000,0.900000,0,4	training		2.018723		0.761000	validation		2.041323		0.752000	test		2.038473		0.755333	
+0.000000,10,70,5.000000,0.000000,0,4	training		2.301322		0.900000	validation		2.301741		0.900000	test		2.302015		0.900000	
+0.000000,10,70,5.000000,0.900000,0,4	training		2.302585		0.886000	validation		2.302585		0.891000	test		2.302585		0.881000	
+0.000000,10,70,20.000000,0.000000,0,4	training		2.302585		0.904000	validation		2.302585		0.914000	test		2.302585		0.915000	
+0.000000,10,70,20.000000,0.900000,0,4	training		2.302585		0.896000	validation		2.302585		0.891000	test		2.302585		0.890778	

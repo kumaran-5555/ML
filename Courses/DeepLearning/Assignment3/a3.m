@@ -45,7 +45,7 @@ function a3(wd_coefficient, n_hid, n_iters, learning_rate, momentum_multiplier, 
       best_so_far.after_n_iters = optimization_iteration_i;
     end
     if mod(optimization_iteration_i, round(n_iters/10)) == 0,
-      fprintf('After %d optimization iterations, training data loss is %f, and validation data loss is %f\n', optimization_iteration_i, training_data_losses(end), validation_data_losses(end));
+      %fprintf('After %d optimization iterations, training data loss is %f, and validation data loss is %f\n', optimization_iteration_i, training_data_losses(end), validation_data_losses(end));
     end
   end
   if n_iters ~= 0, test_gradient(model, datas.training, wd_coefficient); end % check again, this time with more typical parameters
@@ -55,27 +55,32 @@ function a3(wd_coefficient, n_hid, n_iters, learning_rate, momentum_multiplier, 
   end
   % the optimization is finished. Now do some reporting.
   model = theta_to_model(theta);
-  if n_iters ~= 0,
-    clf;
-    hold on;
-    plot(training_data_losses, 'b');
-    plot(validation_data_losses, 'r');
-    legend('training', 'validation');
-    ylabel('loss');
-    xlabel('iteration number');
-    hold off;
-  end
+  %if n_iters ~= 0,
+    %clf;
+    %hold on;
+    %plot(training_data_losses, 'b');
+    %plot(validation_data_losses, 'r');
+    %legend('training', 'validation');
+    %ylabel('loss');
+    %xlabel('iteration number');
+    %hold off;
+  %end
   datas2 = {datas.training, datas.validation, datas.test};
   data_names = {'training', 'validation', 'test'};
+  fprintf('%f,%d,%d,%f,%f,%d,%d\t',wd_coefficient, n_hid, n_iters, learning_rate, momentum_multiplier, do_early_stopping, mini_batch_size);
   for data_i = 1:3,
     data = datas2{data_i};
     data_name = data_names{data_i};
-    fprintf('\nThe loss on the %s data is %f\n', data_name, loss(model, data, wd_coefficient));
+    fprintf('%s\t', data_name)
+    fprintf('\t%f\t', loss(model, data, wd_coefficient));
     if wd_coefficient~=0,
-      fprintf('The classification loss (i.e. without weight decay) on the %s data is %f\n', data_name, loss(model, data, 0));
+      fprintf('\t%f\t', loss(model, data, 0));
     end
-    fprintf('The classification error rate on the %s data is %f\n', data_name, classification_performance(model, data));
+    fprintf('\t%f\t', classification_performance(model, data));
+    
   end
+  fprintf('\n')
+  
 end
 
 function test_gradient(model, data, wd_coefficient)
@@ -102,7 +107,7 @@ function test_gradient(model, data, wd_coefficient)
     if diff / (abs(analytic_here) + abs(fd_here)) < correctness_threshold, continue; end
     error(sprintf('Theta element #%d, with value %e, has finite difference gradient %e but analytic gradient %e. That looks like an error.\n', test_index, base_theta(test_index), fd_here, analytic_here));
   end
-  fprintf('Gradient test passed. That means that the gradient that your code computed is within 0.001%% of the gradient that the finite difference approximation computed, so the gradient calculation procedure is probably correct (not certainly, but probably).\n');
+  %fprintf('Gradient test passed. That means that the gradient that your code computed is within 0.001%% of the gradient that the finite difference approximation computed, so the gradient calculation procedure is probably correct (not certainly, but probably).\n');
 end
 
 function ret = logistic(input)
