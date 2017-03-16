@@ -27,6 +27,9 @@
     <Compile Include="BoschRunner.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Coin10Runner.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="FeatureExploration.py">
       <SubType>Code</SubType>
     </Compile>
