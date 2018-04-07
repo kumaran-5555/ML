@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"workbench.sideBar.location": "right",
+		"editor.wordWrap": "on",
+		"window.menuBarVisibility": "default",
+		"workbench.panel.location": "bottom",
+		"editor.minimap.enabled": true,
+		"workbench.statusBar.visible": true,
+		"workbench.activityBar.visible": true,
+		"git.confirmSync": false,
+		"git.enableSmartCommit": true,
+		"git.autofetch": true,
+		"window.zoomLevel": 0,
+		"workbench.iconTheme": "vscode-icons",
+		"files.autoSave": "afterDelay",
+		"python.linting.pylintArgs": [
+			"--extension-pkg-whitelist=numpy"
+		],
+		"config.python.pythonPath" : "python"
+	}
+}

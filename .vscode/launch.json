@@ -5,8 +5,7 @@
             "name": "Python",
             "type": "python",
             "request": "launch",
-            "stopOnEntry": true,
-            "pythonPath": "${config.python.pythonPath}",
+            "stopOnEntry": true,            
             "program": "${file}",
             "debugOptions": [
                 "WaitOnAbnormalExit",
