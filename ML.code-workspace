@@ -21,6 +21,7 @@
 		"python.linting.pylintArgs": [
 			"--extension-pkg-whitelist=numpy"
 		],
-		"config.python.pythonPath" : "python"
+		"config.python.pythonPath": "python",
+		"python.pythonPath": "C:\\Users\\serajago\\AppData\\Local\\Continuum\\Anaconda3\\python.exe"
 	}
 }
