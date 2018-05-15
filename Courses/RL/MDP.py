@@ -176,13 +176,13 @@ class Dynamics:
         return self.dynamics[key]
         
     def add(self, startState, action, reward, endState, probability):
-        if not isinstance(startState, self.states):
+        if startState not in self.states:
             raise ValueError('Invalid state state {}, not in state Enum'.format(startState))
 
-        if not isinstance(endState, self.states):
+        if endState not in self.states:
             raise ValueError('Invalid state {},not in state Enum'.format(endState))
 
-        if not isinstance(action, self.actions):
+        if action not in self.actions:
             raise ValueError('Invalid action {}, not in action Enum'.format(action))
 
         currentProd = 0.0
@@ -195,31 +195,10 @@ class Dynamics:
         self.dynamics[(startState, action)].append((endState, reward, probability))
 
 
-def simpleGrid():
-    class States(enum.Enum):
-        TERMINAL = 15
-        ONE = 1
-        TWO = 2
-        THREE = 3
-        FOUR = 4
-        FIVE = 5
-        SIX = 6
-        SEVEN = 7 
-        EIGHT = 8
-        NINE = 9
-        TEN = 10
-        ELEVEN = 11
-        TWELVE = 12
-        THIRTEEN = 13
-        FOURTEEN = 14
-
-    class Actions(enum.Enum):
-        LEFT = 1
-        RIGHT = 2
-        UP = 3
-        DOWN = 4
-
-    
+def simpleGrid():    
+    States = set(range(1,16))
+    Terminal = 15
+    Actions = set(['UP', 'DOWN', 'LEFT', 'RIGHT'])
     dyn = Dynamics(States, Actions)
     
     grid = []
@@ -233,31 +212,31 @@ def simpleGrid():
     for i in range(r):
         for j in range(c):
             state = grid[i][j]
-            if States(state) == States.TERMINAL:
+            if state == Terminal:
                 continue
 
             # right
             if j+1 >=c:
-                dyn.add(States(state), Actions.RIGHT, -1, States(state), 1)
+                dyn.add(state, 'RIGHT', -1, state, 1)
             else:
-                dyn.add(States(state), Actions.RIGHT, -1, States(grid[i][j+1]), 1)
+                dyn.add(state, 'RIGHT', -1, grid[i][j+1], 1)
             # left 
             if j-1 < 0:
-                dyn.add(States(state), Actions.LEFT, -1, States(state), 1)
+                dyn.add(state, 'LEFT', -1, state, 1)
             else:
-                dyn.add(States(state), Actions.LEFT, -1, States(grid[i][j-1]), 1)
+                dyn.add(state, 'LEFT', -1, grid[i][j-1], 1)
 
             # up
             if i-1 < 0:
-                dyn.add(States(state), Actions.UP, -1, States(state), 1)
+                dyn.add(state, 'UP', -1, state, 1)
             else:
-                dyn.add(States(state), Actions.UP, -1, States(grid[i-1][j]), 1)
+                dyn.add(state, 'UP', -1, grid[i-1][j], 1)
 
             # down
             if i+1 >= r:
-                dyn.add(States(state), Actions.DOWN, -1, States(state), 1)
+                dyn.add(state, 'DOWN', -1, state, 1)
             else:
-                dyn.add(States(state), Actions.DOWN, -1, States(grid[i+1][j]), 1)
+                dyn.add(state, 'DOWN', -1, grid[i+1][j], 1)
 
     policy = Policy(States, Actions)
     for s in States:
@@ -266,16 +245,16 @@ def simpleGrid():
             probability =  1.0/ len(Actions)
             policy.add(s, a, probability)
 
-    mdp = MDP(States, Actions, dyn, policy, States.TERMINAL, 0.9)
+    mdp = MDP(States, Actions, dyn, policy, Terminal, 0.9)
     #mdp.policyEvaluation()
     mdp.policyIteration()
 
     for i in range(r):
         for j in range(c):
-            state = States(grid[i][j])
+            state = grid[i][j]
             print(mdp.value[state], ' ', end='')
         print()
-        
+
 
 
         
