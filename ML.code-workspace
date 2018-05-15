@@ -22,6 +22,6 @@
 			"--extension-pkg-whitelist=numpy"
 		],
 		"config.python.pythonPath": "python",
-		"python.pythonPath": "C:\\Users\\serajago\\AppData\\Local\\Continuum\\Anaconda3\\python.exe"
+		"python.pythonPath": "C:\\Users\\serajago.FAREAST\\AppData\\Local\\Continuum\\Anaconda3\\python.exe"
 	}
 }

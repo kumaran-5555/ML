@@ -7,25 +7,14 @@ import enum
 import copy
 
 class MDP:
-    def __init__(self, states, actions, dynamics, policy, terminal):
+    def __init__(self, states, actions, dynamics, policy, terminal, gamma):                
         self.states = states
         self.actions = actions
         self.dynamics = dynamics
         self.terminal = terminal
         self.policy = policy
         self.value = collections.defaultdict(lambda: 0.0)
-
-        # for every state, the distribution over actions should be valid         
-        for s in self.states:
-            if s == self.terminal:
-                continue
-            
-            prob = 0.0
-            for _, p in self.policy[s]:
-                prob += p
-
-            if prob != 1.0:
-                raise ValueError('Invalid policy, for state {} total probability {} is not 1.0'.format(s, prob))
+        self.gamma = gamma
 
         # for every state, action, the distribution over terminal state and rewards should be valid
         for s in self.states:
@@ -38,62 +27,145 @@ class MDP:
                     prob += p
                 if prob != 1.0:
                     raise ValueError('Invalid dynamics, for state {} action {} total probability {} is not 1.0'.format(s, a, prob))
-        
-    
-    def policyEvaluation(self, gamma=0.999999):
+
+    def policyEvaluation(self, policy=None): 
+        if policy is None:            
+            policy = self.policy.actionDistrib()
+
+        i = 0
         while True:
-            delta = 0.0
-            v = copy.deepcopy(self.value)
+            i+=1
+            delta = 0.0            
             for s in self.states:
                 if s == self.terminal:
                     continue
 
-                old = v[s]
+                old = self.value[s]
+                new = self.v(s, policy)
 
-                new = 0.0
-                for action, actionProb in self.policy[s]:
-                    for endState, reward, prob in self.dynamics[(s, action)]:
-                        new += (actionProb * prob * (reward + gamma * v[endState]))
-                
                 self.value[s] = new
-
                 delta = max(delta, abs(old-new))
 
-            if delta < 1e-4:
-                break
-            
+            if delta < 1e-2:
+                break            
 
         return self.value
 
 
 
+
+    def v(self, state, policy):
+        '''
+            Evaluates v(s) for the current policy and value
+        '''
+        ret = 0.0
+        for action, actionProb in policy[state]:
+            for endState, reward, prob in self.dynamics[(state, action)]:
+                ret += (actionProb * prob * (reward + self.gamma * self.value[endState]))
         
+        return ret
+        
+
+
+
+    def q(self, state, action):
+        '''
+            Evaluates q(s,a) for the current value function
+        '''
+        ret = 0
+        for endState, reward, prob in self.dynamics[(state, action)]:
+            ret +=(prob * (reward + self.gamma * self.value[endState]))
+
+        return ret
+
+
+
+    def policyImprovement(self, policy):
+        isStable = True
+        newPolicy = {}
+        for s in self.states:
+            if s == self.terminal:
+                continue
+
+            old, _ = policy[s][0]
+            qValue = []
+            for a in self.actions:
+                qValue.append((a, self.q(s, a)))
+
+            qValue = sorted(qValue, key=lambda x: x[1], reverse=True)
+
+            new = qValue[0][0]
+
+            if old != new:
+                isStable = False
+                policy[s] = [(new,1.0)]
+
+            newPolicy[s] = [(new,1.0)]
+
+        return isStable
+
+
+    def policyIteration(self):
+        policy = self.policy.actionSample()
+        while True:            
+            # learn better value estimates by keeping policy constant
+            self.policyEvaluation(policy=policy)
+
+            # learn better policy by keeping value estimates constant
+            isStable = self.policyImprovement(policy)
+
+            if isStable:
+                break
 
 class Policy:
     def __init__(self, states, actions):
-        self.dynamics = collections.defaultdict(list)
+        self.prob = collections.defaultdict(list)
+        self.action = collections.defaultdict(list)
         self.states = states
         self.actions = actions
 
     def add(self, state, action, probability):
-        if not isinstance(state, self.states):
+        if state not in self.states:
             raise ValueError('Invalid state state {}, not in state Enum'.format(state))
 
-        if not isinstance(action, self.actions):
+        if action not in self.actions:
             raise ValueError('Invalid action {}, not in action Enum'.format(action))
 
-        currentProd = 0.0
-        for _, p  in self.dynamics[state]:
-            currentProd +=  p
-
-        if currentProd + probability > 1.0:
+        
+        if sum(self.prob[state]) + probability > 1.0:
             raise ValueError('Invalid probabilty, total is > 1.0')
 
-        self.dynamics[state].append((action, probability))
+        self.prob[state].append(probability)
+        self.action[state].append(action)
 
-    def __getitem__(self, key):
-        return self.dynamics[key]
+    def actionDistrib(self):
+        '''
+            return full action distribution for each state
+        '''
+        ret = {}
+        for s in self.states:
+            ret[s] = [(self.action[s][i], self.prob[s][i]) for i in range(len(self.action[s]))]
+        return ret
+    
+    def actionSample(self):
+        '''
+            returns single action sampled from the distribution for each state
+        '''
+        ret = {}
+        for s in self.states:
+            ret[s] = [(np.random.choice(self.action[s], p=self.prob[s]), 1.0)]
 
+        return ret
+
+    def update(self, state, actions, probs):
+        if sum(probs) != 1.0:
+            raise ValueError('Invalid probabilty, total is != 1.0')
+
+        self.action[state] = actions
+        self.prob[state] = probs
+
+    
+    
 class Dynamics:
     def __init__(self, states, actions):
         self.dynamics = collections.defaultdict(list)
@@ -165,27 +237,27 @@ def simpleGrid():
                 continue
 
             # right
-            if i+1 >=c:
+            if j+1 >=c:
                 dyn.add(States(state), Actions.RIGHT, -1, States(state), 1)
             else:
-                dyn.add(States(state), Actions.RIGHT, -1, States(grid[i+1][j]), 1)
+                dyn.add(States(state), Actions.RIGHT, -1, States(grid[i][j+1]), 1)
             # left 
-            if i-1 < 0:
+            if j-1 < 0:
                 dyn.add(States(state), Actions.LEFT, -1, States(state), 1)
             else:
-                dyn.add(States(state), Actions.LEFT, -1, States(grid[i-1][j]), 1)
+                dyn.add(States(state), Actions.LEFT, -1, States(grid[i][j-1]), 1)
 
             # up
-            if j-1 < 0:
+            if i-1 < 0:
                 dyn.add(States(state), Actions.UP, -1, States(state), 1)
             else:
-                dyn.add(States(state), Actions.UP, -1, States(grid[i][j-1]), 1)
+                dyn.add(States(state), Actions.UP, -1, States(grid[i-1][j]), 1)
 
-            # up
-            if j+1 >= r:
+            # down
+            if i+1 >= r:
                 dyn.add(States(state), Actions.DOWN, -1, States(state), 1)
             else:
-                dyn.add(States(state), Actions.DOWN, -1, States(grid[i][j+1]), 1)
+                dyn.add(States(state), Actions.DOWN, -1, States(grid[i+1][j]), 1)
 
     policy = Policy(States, Actions)
     for s in States:
@@ -194,11 +266,19 @@ def simpleGrid():
             probability =  1.0/ len(Actions)
             policy.add(s, a, probability)
 
-    mdp = MDP(States, Actions, dyn, policy, States.TERMINAL)
-    mdp.policyEvaluation()
+    mdp = MDP(States, Actions, dyn, policy, States.TERMINAL, 0.9)
+    #mdp.policyEvaluation()
+    mdp.policyIteration()
+
+    for i in range(r):
+        for j in range(c):
+            state = States(grid[i][j])
+            print(mdp.value[state], ' ', end='')
+        print()
+        
 
 
-
+        
 
     
 
