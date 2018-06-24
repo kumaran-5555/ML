@@ -46,7 +46,7 @@ class MDP:
                 self.value[s] = new
                 delta = max(delta, abs(old-new))
 
-            if delta < 1e-2:
+            if delta < 1e-3:
                 break            
 
         return self.value
@@ -117,6 +117,9 @@ class MDP:
             if isStable:
                 break
 
+        for s in policy:
+            self.policy.update(s, policy[s])
+
 class Policy:
     def __init__(self, states, actions):
         self.prob = collections.defaultdict(list)
@@ -157,12 +160,12 @@ class Policy:
 
         return ret
 
-    def update(self, state, actions, probs):
-        if sum(probs) != 1.0:
-            raise ValueError('Invalid probabilty, total is != 1.0')
-
-        self.action[state] = actions
-        self.prob[state] = probs
+    def update(self, state, actionsProbs):
+        self.action[state] = []
+        self.prob[state] = []
+        for action, prob in actionsProbs:
+            self.add(state, action, prob)
+        
 
     
     
@@ -245,14 +248,14 @@ def simpleGrid():
             probability =  1.0/ len(Actions)
             policy.add(s, a, probability)
 
-    mdp = MDP(States, Actions, dyn, policy, Terminal, 0.9)
-    #mdp.policyEvaluation()
-    mdp.policyIteration()
+    mdp = MDP(States, Actions, dyn, policy, Terminal, 0.9999)
+    mdp.policyEvaluation()
+    #mdp.policyIteration()
 
     for i in range(r):
         for j in range(c):
             state = grid[i][j]
-            print(mdp.value[state], ' ', end='')
+            print('{0: 2.2f}\t'.format(mdp.value[state]), end='')
         print()
 
 
