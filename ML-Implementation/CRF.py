@@ -3,15 +3,20 @@ import sys
 import os
 
 
+# http://www.cs.columbia.edu/~mcollins/crf.pdf
 class LinearCRF:
     def __init__(self, nClasses, featuresDimension):        
         self.m = featuresDimension
         self.n = nClasses + 1
-        self.edgeWieghts = np.array((self.n, self.m))
-        self.featureWeights = np.array((1, self.m))
+
+        # one row for each pair of states
+        self.edgeWieghts = np.array((self.n, self.n, self.m))
+
+        # one row for each state
+        self.classWeights = np.array((1, self.m))
 
 
-    def raw_p_y_p_x(self, labels, features):
+    def likelyhood_p_y_p_x(self, labels, features):
         score = 0.0
         prevlabel = 0
         seqLength = len(labels)
@@ -22,14 +27,14 @@ class LinearCRF:
         return score
 
     def p_y_p_x(self, labels, features):
-        raw_p_y_p_x = self.raw_p_y_p_x(labels, features)
+        raw_p_y_p_x = self.likelyhood_p_y_p_x(labels, features)
         p_x = self.p_x(features)
 
         return raw_p_y_p_x / p_x
 
     def p_x(self, features):
         
-        self.forwardBackwar(features)
+        self.forwardBackward(features)
 
         m = len(features)
         # consider all possible ending states for alpha table
@@ -39,7 +44,7 @@ class LinearCRF:
         
         return score
 
-    def forwardBackwar(self, features):
+    def forwardBackward(self, features):
         m = len(features)
         # we don't include the sepcial starting stage in alpha table, 
         # because sequence can't end with special state
@@ -85,10 +90,33 @@ class LinearCRF:
             bScore += (self.beta[0, k]  * self.fi(k, 0, features[0]))
 
         assert(aScore != bScore)
-        
+
     def fi(self, y, prevY, x):
-        score = np.dot(self.edgeWieghts[y] , x) + np.dot(self.edgeWieghts[prevY], x) + np.dot(self.featureWeights[0], x)
+        score = np.dot(self.edgeWieghts[prevY, y] , x) + np.dot(self.classWeights[y], x)
         return np.exp(score)
+
+
+    def grad_likelyhood_p_y_p_x(self, labels, features):
+        self.gradEdgeWeights = np.zeros_like(self.edgeWieghts)
+        self.gradClassWeights = np.zeros_like(self.classWeights)
+
+        prevlabel = 0
+        seqLength = len(labels)
+        for i in range(seqLength):
+            # position i affects 
+            #  edge weights of i-1, i
+            #  class weights of i
+
+            self.gradEdgeWeights[prevlabel, labels[i]] += features[i]
+            self.gradClassWeights[labels[i]] += features[i]
+
+        return
+        
+            
+
+
+
+
 
     
 
