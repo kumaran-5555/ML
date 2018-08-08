@@ -1,5 +1,7 @@
 # Linear CRF
 
+www.cs.columbia.edu/~mcollins
+
 # Definition
 
 Labels ${S = \{s_0, s_1, s_2 ... s_n-1}\}, s_0$ is a special start state.
@@ -45,7 +47,7 @@ $L = \sum_1^n \log(P(Y^i|X^i))$
 
 $E, W = \underset{E, W}{\operatorname{argmin}} -L$
 
-# Computing $Z(X)$
+# Training - Computing $Z(X)$
 
 $Z$ is sum of exponential number of terms from sequence permutation $S^m$. This can be computed efficiently using dynamic programing with following structure.
 
@@ -75,7 +77,7 @@ $
 6. $Z(X) = \sum_{s \in \{S-s_0\}} \alpha[s, m]$
 
 
-# Computing Gradient of $L$
+# Training - Computing Gradient of $L$
 
 We learn $E,W$ which optimizes $L$. 
 
@@ -109,11 +111,10 @@ $
 \begin{aligned}
 \frac {\partial } {\partial E} log(score(Y, X)) & = \frac {\partial } {\partial E} \sum_{i=1}^m E[y_{i-1}, y_i]^T x_i \\
  & = \sum_{i=1}^m \frac {\partial} {\partial E[y_{i-1}, y_i]} E[y_{i-1}, y_i]^T x_i \\
-{\partial E[y_{i-1}, y_i]} & = x_i\\
+\\
 \frac {\partial } {\partial W} log(score(Y, X)) & = \frac {\partial } {\partial E} \sum_{i=1}^m  W
 [y_i]^T x_i \\
 & = \sum_{i=1}^m \frac {\partial} {\partial W[y_i]} W[y_i]^T x_i \\
-{\partial W[y_i]} & = x_i\\
 \end{aligned}
 $
 
@@ -140,5 +141,41 @@ $
 & = \sum_{Y^j \in S^m}  \frac {score(Y^j, X)} {\sum_{Y^k \in S^m} \prod_{i=1}^m \phi (y_{i-1}^k, y_i^k, x_i)} * \frac {\partial } {\partial E,W}  \sum_{i=1}^m E[y_{i-1}^j, y_i^j]^T x_i + W[y_i^j]^T x_i\\
 \\
 & = \sum_{Y^j \in S^m} P(Y^j|X) * \frac {\partial } {\partial E,W}  \sum_{i=1}^m E[y_{i-1}^j, y_i^j]^T x_i + W[y_i^j]^T x_i\\
+\end{aligned}
+$
+
+
+Rewriting $\sum_{Y^j \in S^m} P(Y^j|X)$, sum all combination of sequence can be written as 
+sum of all combinations of sequence with $(y_{i-1}^j=a,y_i^j=b)$ and sum this score for all possible settings of $(a,b)$
+
+$
+\begin{aligned}
+\sum_{Y^j \in S^m} P(Y^j|X) & = \sum_{a\in S, i=1 \rightarrow a =s_0, b\in \{S-s_0\}} \sum_{Y^j \in S^m, y_{i-1}^j =a, y_i^j =b} P(Y^j|X) \\
+\\
+& = \sum_{a\in S, i=1 \rightarrow a =s_0, b\in \{S-s_0\}} q(i, a, b), (1<=i<=m)
+\end{aligned}
+$
+
+
+Continuing with above, 
+
+$
+\begin{aligned}
+\\
+\frac {\partial } {\partial E,W} log(Z(X)) & = \sum_{Y^j \in S^m} P(Y^j|X) * \frac {\partial } {\partial E,W}  \sum_{i=1}^m E[y_{i-1}^j, y_i^j]^T x_i + W[y_i^j]^T x_i\\
+\\
+&=  \sum_{i=1}^m  \sum_{Y^j \in S^m} P(Y^j|X) * \frac 
+{\partial } {\partial E,W} E[y_{i-1}^j, y_i^j]^T x_i + W[y_i^j]^T x_i\\
+\\
+&=  \sum_{i=1}^m \sum_{a\in S, i=1 \rightarrow a =s_0, b\in \{S-s_0\}} q(i, a, b) * \frac {\partial } {\partial E,W} E[a, b]^T x_i + W[b]^T x_i\\
+\\
+\frac {\partial } {\partial E} log(Z(X)) &= \sum_{i=1}^m \sum_{a\in S, i=1 \rightarrow a =s_0, b\in \{S-s_0\}} q(i, a, b) * \frac {\partial } {\partial E} E[a, b]^T x_i\\
+\\
+&= \sum_{i=1}^m \sum_{a\in S, i=1 \rightarrow a =s_0, b\in \{S-s_0\}} q(i, a, b) * \frac {\partial } {\partial E[a,b]} E[a, b]^T x_i\\
+\\
+\frac {\partial } {\partial W} log(Z(X)) &= \sum_{i=1}^m \sum_{a\in S, i=1 \rightarrow a =s_0, b\in \{S-s_0\}} q(i, a, b) * \frac {\partial } {\partial W} W[b]^T x_i\\
+\\
+&= \sum_{i=1}^m \sum_{a\in S, i=1 \rightarrow a =s_0, b\in \{S-s_0\}} q(i, a, b) * \frac {\partial } {\partial W[b]} W[b]^T x_i\\
+\\
 \end{aligned}
 $
