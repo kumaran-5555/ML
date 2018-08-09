@@ -47,7 +47,7 @@ $L = \sum_1^n \log(P(Y^i|X^i))$
 
 $E, W = \underset{E, W}{\operatorname{argmin}} -L$
 
-# Training - Computing $Z(X)$
+## Training - Computing $Z(X)$
 
 $Z$ is sum of exponential number of terms from sequence permutation $S^m$. This can be computed efficiently using dynamic programing with following structure.
 
@@ -67,17 +67,18 @@ $
 5. Define
 
 $\begin{aligned}
+\alpha[s_0, 0] &= 1\\
 \alpha[s,1] & = \phi (s_0, s, x_1)\\
-\alpha[s,i] & = \sum_{Y^k \in S^i} score(Y^k, X_i) , y_i^k = s\\
+\alpha[s,i] & = \sum_{Y^k \in S^i, y_i^k = s} score(Y^k, X_{1..i}) \\
 \alpha[s,i] & = \sum_{Y^k \in S^{i-1}} score(Y^k, X_{1...i-1}) * \phi (y_{i-1}^k, s, x_i)\\
-&= \sum_{s' \in \{S-s_0\}} \alpha[s', i_1] * \phi (s',s, x_i)\\
+&= \sum_{s' \in \{S-s_0\}} \alpha[s', i-1] * \phi (s',s, x_i)\\
 \end{aligned}
 $
     
 6. $Z(X) = \sum_{s \in \{S-s_0\}} \alpha[s, m]$
 
 
-# Training - Computing Gradient of $L$
+## Training - Computing Gradient of $L$
 
 We learn $E,W$ which optimizes $L$. 
 
@@ -179,3 +180,30 @@ $
 \\
 \end{aligned}
 $
+
+$q(i, a,b)$ is probability of having a label sequences with $i-1$ position having label $a$ and $i$ position having label $b$ for given $X$.
+
+
+## Training - Computing Gradient of $q(i, a,b)$
+
+A label sequence with $i-1$ position having label $a$ and $i$ position having label $b$, can be split in to two sequence, one prefix label sequence of positions $1,2,...i-1$ and ending with $a$, and another one suffix label sequnce of positions  $i,i+1,i+2,...m$ starting with $b$.
+
+$\alpha(a, i)$ provides score (unnormalized probability) for prefix label sequence. We will define $\beta(b, i)$ which provides scores for label sequence from $i,i+1,i+2...m$ which starts with $b$.
+
+Then we can compute as
+
+$
+\begin{aligned}
+q(i, a,b) = \frac{\alpha(a, i-1) * \phi(a, b, i) * \beta(b, i)}{ Z(X)}
+\end{aligned}
+$
+
+$
+\begin{aligned}
+\beta(b,m) & = 1\\
+\\
+\beta(b,i) & =  \sum_{s \in \{S-s_0\}} \phi(b, s, x_{i+1}) * \beta(s, i+1)
+\end{aligned}
+$
+
+# Regularization 
