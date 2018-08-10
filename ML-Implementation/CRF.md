@@ -206,4 +206,42 @@ $
 \end{aligned}
 $
 
-# Regularization 
+## Training - Regularization 
+
+To avoid overfitting, we can ad $L2$ penalty of $W,E$ to the loss function $L$.
+
+$L = \sum_1^n \log(P(Y^i|X^i)) + 1/2 (||W||_2^2 + ||E||_2^2)$ 
+
+$
+\begin{aligned}
+\\
+\frac {\partial } {\partial E} 1/2 (||W||_2^2 + ||E||_2^2) & = E\\
+\\
+\frac {\partial } {\partial W} 1/2 (||W||_2^2 + ||E||_2^2) & = W
+\end{aligned}
+\\
+$
+
+# Inference
+
+During inference, we want to get most likely (high $P(Y|X)$) label sequence given $X$. Since normalization $Z(X)$ is same for all label sequences, we can only maximize $score(Y|X)$ to select the best $Y$
+
+This can be using similar technique of $\alpha$ table. 
+
+$\alpha[s,i] = p$  is the previous label of most likely sequence with label $s$ at position $i$.
+
+$\beta[s, i] = score$ is the score of most likely sequence of length $i$ ending with label $s$. 
+
+
+$
+\begin{aligned}
+\\
+\beta[s, 0] &= 0, s \in {S-s_0},\\
+        &=1, s = s_0
+\\
+\alpha[s, i] = \underset{p \in \{S-s_0\}}{\operatorname{{argmax}}}       \beta[p, i-1] * \phi(p, s, x_i)\\
+\\
+\beta[s, i] = \underset{p \in \{S-s_0\}}{\operatorname{{max}}}       \beta[p, i-1] * \phi(p, s, x_i)\\
+\end{aligned}
+\\
+$
