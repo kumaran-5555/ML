@@ -200,9 +200,9 @@ $
 
 $
 \begin{aligned}
-\beta(b,m) & = 1\\
+\beta(s,m) & = 1\\
 \\
-\beta(b,i) & =  \sum_{s \in \{S-s_0\}} \phi(b, s, x_{i+1}) * \beta(s, i+1)
+\beta(s,i) & =  \sum_{s' \in \{S-s_0\}} \beta(s', i+1) * \phi(s, s', x_{i+1})
 \end{aligned}
 $
 

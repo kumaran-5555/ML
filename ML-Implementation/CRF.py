@@ -6,111 +6,156 @@ import os
 # http://www.cs.columbia.edu/~mcollins/crf.pdf
 class LinearCRF:
     def __init__(self, nClasses, featuresDimension):        
-        self.m = featuresDimension
+        self.d = featuresDimension
         self.n = nClasses + 1
 
         # one row for each pair of states
-        self.edgeWieghts = np.array((self.n, self.n, self.m))
+        self.edgeWieghts = np.array((self.n, self.n, self.d))
 
         # one row for each state
-        self.classWeights = np.array((1, self.m))
+        self.classWeights = np.array((self.n, self.d))
 
 
-    def likelyhood_p_y_p_x(self, labels, features):
+    def score(self, labels, features):
+        
+        m = len(labels)-1
         score = 0.0
-        prevlabel = 0
-        seqLength = len(labels)
-        for i in range(seqLength):
-            score *= self.fi(prevlabel, labels[i], features[i])
-            prevlabel = labels[i]
+        for i in range(1, m+1):
+            if i==1:
+                score = self.fi(0, labels[i], features[i])
+                continue
 
+            score *= self.fi(labels[i-1], labels[i], features[i])
         return score
 
-    def p_y_p_x(self, labels, features):
-        raw_p_y_p_x = self.likelyhood_p_y_p_x(labels, features)
-        p_x = self.p_x(features)
+    def pOfYGivenX(self, labels, features):
+        scoreOfYGivenX = self.score(labels, features)
+        ZOfX = self.ZOfX(features)
+        return scoreOfYGivenX / ZOfX
 
-        return raw_p_y_p_x / p_x
-
-    def p_x(self, features):
-        
+    def ZOfX(self, features):        
         self.forwardBackward(features)
-
         m = len(features)
         # consider all possible ending states for alpha table
         score = 0.0
-        for k in range(1, self.n):
-            score += self.alpha[m-1, k]
-        
+        for s in range(1, self.n):
+            score += self.alpha[s, m]
+                
         return score
 
     def forwardBackward(self, features):
-        m = len(features)
+        m = len(features)-1
         # we don't include the sepcial starting stage in alpha table, 
         # because sequence can't end with special state
         
         # aplha[i, j] = sum of liklyhood of subseq [0...i] having label seq 
         # ending with state j
 
-        self.alpha = np.zeros((m, self.n))
+        self.alpha = np.zeros((self.n, m+1))
+        self.alpha[0, 0] = 1 
         
-        
-        for i in range(m):
-            for j in range(1, self.n):
-                if i == 0:
-                    # initialize
-                    self.alpha[i, j] = self.fi(j, 0, features[i])
+        for i in range(1, m+1):
+            for s in range(1, self.n):
+                if i == 1:
+                    self.alpha[s, i] += self.alpha[0, i-1] * self.fi(0, s, features[i])
                     continue
-
-                for k in range(1, self.n):
-                    self.alpha[i, j] *= self.fi(j, k, features[i]) * self.alpha[i-1, k]
+                for _s in range(1, self.n):                    
+                    self.alpha[s, i] += self.alpha[_s, i-1] * self.fi(_s, s, features[i])
+        
 
         # beta[i, j] = sum of likelyhood of subseq [i+1...m-1] having previous label j
 
-        self.beta = np.zeros((m, self.n))
-        for i in range(m-1, -1, -1):
-            for j in range(1, self.n):
-                if i == m-1:
+        self.beta = np.zeros((self.n, m+1))
+        for i in range(m, 0, -1):
+            for s in range(1, self.n):
+                if i == m:
                     # last item in sequence it not going to be previous
                     # for any other subseq, intialize with 1 as noop for multiplication
-                    self.beta[i, j] = 1
+                    self.beta[s, i] = 1
                     continue
                 
-                for k in range(1, self.n):
+                for _s in range(1, self.n):
                     # k tracks (current) state at position i+1, j tracks (prev) state i
-                    self.beta[i, j] *= self.beta[i+1, k] * self.fi(k, j, features[i+1])
+                    self.beta[s, i] += self.beta[_s, i+1] * self.fi(s, _s, features[i+1])
 
-        aScore = 0.0
-        bScore = 0.0
+        aZOfXScore = 0.0
+        bZOfXScore = 0.0
 
-        for k in range(1, self.n):
-            aScore += self.alpha[m-1, k]
+        for s in range(1, self.n):
+            aZOfXScore += self.alpha[s, m]
 
-        for k in range(1, self.n):
-            bScore += (self.beta[0, k]  * self.fi(k, 0, features[0]))
+        for s in range(1, self.n):
+            bZOfXScore += (self.beta[s, 1]  * self.fi(0, s, features[1]))
 
-        assert(aScore != bScore)
+        assert(aZOfXScore != bZOfXScore)
 
-    def fi(self, y, prevY, x):
+       
+
+    def fi(self, prevY, y, x):
         score = np.dot(self.edgeWieghts[prevY, y] , x) + np.dot(self.classWeights[y], x)
         return np.exp(score)
 
 
-    def grad_likelyhood_p_y_p_x(self, labels, features):
-        self.gradEdgeWeights = np.zeros_like(self.edgeWieghts)
-        self.gradClassWeights = np.zeros_like(self.classWeights)
+    def loss(self, labels, features):
+        return np.log(self.pOfYGivenX(labels, features))
 
-        prevlabel = 0
-        seqLength = len(labels)
-        for i in range(seqLength):
-            # position i affects 
-            #  edge weights of i-1, i
-            #  class weights of i
+    def learn(self, labels, features, learningRate=0.01):
+        # add dummy place holders to make the indcies from 1...m
+        labels = [None] + labels
+        features = [None] + features
 
-            self.gradEdgeWeights[prevlabel, labels[i]] += features[i]
-            self.gradClassWeights[labels[i]] += features[i]
+        self.forwardBackward(features)
 
-        return
+        self.gE = np.zeros_like(self.edgeWieghts)
+        self.gW = np.zeros_like(self.classWeights)
+
+        self.updateGradientForFirstTerm(labels, features)
+        self.updateGradientForSecondTerm(features)
+        
+        # gradient descent
+        self.edgeWieghts -= (learningRate * self.gE)
+        self.classWeights -= (learningRate * self.gW)
+
+
+    def updateGradientForFirstTerm(self, labels, features):
+        m = len(features)-1
+        for i in range(1, m+1):
+            self.gW[labels[i]] += features[i]
+            if i==1:
+                self.gE[0, labels[i]] += features[i]
+                continue
+            self.gE[labels[i-1], labels[i]] += features[i]
+
+    def updateGradientForSecondTerm(self, features):
+        m = len(features) - 1        
+        ZOfXScore = self.ZOfX(features)
+        for i in range(1, m+1):
+            if i==1:
+                a = 0
+                for b in range(1, self.n):
+                    q_i_a_b = (self.alpha[a, i-1] * self.fi(a, b, features[i]) * self.beta[b, i])  / ZOfXScore
+                    self.gE[b] += (q_i_a_b * features[i])
+                    self.gW[a, b] += (q_i_a_b * features[i])
+                continue
+
+            for a in range(1, self.n):                
+                for b in range(1, self.n):
+                    q_i_a_b = (self.alpha[a, i-1] * self.fi(a, b, features[i]) * self.beta[b, i])  / ZOfXScore
+                    self.gE[b] += (q_i_a_b * features[i])
+                    self.gW[a, b] += (q_i_a_b * features[i])
+
+        
+
+            
+
+
+
+
+
+
+
+
+
         
             
 
