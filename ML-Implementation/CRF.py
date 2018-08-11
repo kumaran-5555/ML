@@ -10,10 +10,10 @@ class LinearCRF:
         self.n = nClasses + 1
 
         # one row for each pair of states
-        self.edgeWieghts = np.array((self.n, self.n, self.d))
+        self.edgeWieghts = np.random.normal(size=(self.n, self.n, self.d))
 
         # one row for each state
-        self.classWeights = np.array((self.n, self.d))
+        self.classWeights = np.random.normal(size=(self.n, self.d))
 
 
     def score(self, labels, features):
@@ -31,16 +31,18 @@ class LinearCRF:
     def pOfYGivenX(self, labels, features):
         scoreOfYGivenX = self.score(labels, features)
         ZOfX = self.ZOfX(features)
+        if (scoreOfYGivenX - ZOfX) > 1e-2:
+            scoreOfYGivenX = self.score(labels, features)
+            self.forwardBackward(features)
+            raise ValueError
         return scoreOfYGivenX / ZOfX
 
-    def ZOfX(self, features):        
-        self.forwardBackward(features)
-        m = len(features)
+    def ZOfX(self, features):                
+        m = len(features)-1
         # consider all possible ending states for alpha table
         score = 0.0
         for s in range(1, self.n):
-            score += self.alpha[s, m]
-                
+            score += self.alpha[s, m]                
         return score
 
     def forwardBackward(self, features):
@@ -86,8 +88,9 @@ class LinearCRF:
 
         for s in range(1, self.n):
             bZOfXScore += (self.beta[s, 1]  * self.fi(0, s, features[1]))
-
-        assert(aZOfXScore != bZOfXScore)
+        
+        if abs(aZOfXScore-bZOfXScore) > 0.1:
+            pass
 
        
 
@@ -99,10 +102,13 @@ class LinearCRF:
     def loss(self, labels, features):
         return np.log(self.pOfYGivenX(labels, features))
 
-    def learn(self, labels, features, learningRate=0.01):
+    def learn(self, labels, features, learningRate=0.01, alpha=0.002):
         # add dummy place holders to make the indcies from 1...m
         labels = [None] + labels
         features = [None] + features
+        self.alpha = None
+        self.beta = None
+        
 
         self.forwardBackward(features)
 
@@ -111,11 +117,20 @@ class LinearCRF:
 
         self.updateGradientForFirstTerm(labels, features)
         self.updateGradientForSecondTerm(features)
+        self.updateGradientOfL2Penalty(alpha)
+        
+        l = self.loss(labels, features)
+        p = self.pOfYGivenX(labels, features)
+        z = self.ZOfX(features)
+        print(l, p, z)
+
         
         # gradient descent
-        self.edgeWieghts -= (learningRate * self.gE)
-        self.classWeights -= (learningRate * self.gW)
+        self.edgeWieghts += (learningRate * self.gE)
+        self.classWeights += (learningRate * self.gW)
 
+        return l
+        
 
     def updateGradientForFirstTerm(self, labels, features):
         m = len(features)-1
@@ -134,24 +149,32 @@ class LinearCRF:
                 a = 0
                 for b in range(1, self.n):
                     q_i_a_b = (self.alpha[a, i-1] * self.fi(a, b, features[i]) * self.beta[b, i])  / ZOfXScore
-                    self.gE[b] += (q_i_a_b * features[i])
-                    self.gW[a, b] += (q_i_a_b * features[i])
+                    self.gW[b] += np.multiply(features[i], q_i_a_b)
+                    self.gE[a, b] += np.multiply(features[i], q_i_a_b)
                 continue
 
             for a in range(1, self.n):                
                 for b in range(1, self.n):
                     q_i_a_b = (self.alpha[a, i-1] * self.fi(a, b, features[i]) * self.beta[b, i])  / ZOfXScore
-                    self.gE[b] += (q_i_a_b * features[i])
-                    self.gW[a, b] += (q_i_a_b * features[i])
+                    self.gW[b] += np.multiply(features[i], q_i_a_b)
+                    self.gE[a, b] += np.multiply(features[i], q_i_a_b)
 
         
 
-            
+    def updateGradientOfL2Penalty(self, alpha):
+        self.gW += alpha * self.classWeights
+        self.gE += alpha * self.edgeWieghts
 
 
 
 
 
+if __name__ == '__main__':
+    c = LinearCRF(3, 3)
+    while True:
+        l = c.learn([1,2,3], [[1,0,0],[0,1,0],[0,0,1]])
+        if l > -1e-2:
+            break
 
 
 
