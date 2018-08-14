@@ -1,6 +1,10 @@
 import numpy as np 
 import sys
 import os
+from nltk.tag.util import untag
+import nltk
+import collections
+import scipy
 
 
 # http://www.cs.columbia.edu/~mcollins/crf.pdf
@@ -166,30 +170,96 @@ class LinearCRF:
         self.gE += alpha * self.edgeWieghts
 
 
+# we will use features from  https://nlpforhackers.io/crf-pos-tagger/
+def features(sentence, index):
+    """ sentence: [w1, w2, ...], index: the index of the word """
+    return {
+        'word': sentence[index],
+        'is_first': index == 0,
+        'is_last': index == len(sentence) - 1,
+        'is_capitalized': sentence[index][0].upper() == sentence[index][0],
+        'is_all_caps': sentence[index].upper() == sentence[index],
+        'is_all_lower': sentence[index].lower() == sentence[index],
+        'prefix-1': sentence[index][0],
+        'prefix-2': sentence[index][:2],
+        'prefix-3': sentence[index][:3],
+        'suffix-1': sentence[index][-1],
+        'suffix-2': sentence[index][-2:],
+        'suffix-3': sentence[index][-3:],
+        'prev_word': '' if index == 0 else sentence[index - 1],
+        'next_word': '' if index == len(sentence) - 1 else sentence[index + 1],
+        'has_hyphen': '-' in sentence[index],
+        'is_numeric': sentence[index].isdigit(),
+        'capitals_inside': sentence[index][1:].lower() != sentence[index][1:]
+    }
+
+def vectorizer(data):
+    featureDimesntion = collections.defaultdict(lambda : collections.defaultdict())
+
+    for row in data:
+        for index in row:
+            for f,v in index.items():
+                if v in featureDimesntion[f]:
+                    continue
+
+                featureDimesntion[f][v] = len(featureDimesntion[f])
+
+    offsets = {}
+    offset = 0
+    
+    for f in featureDimesntion:
+        offsets[f] = offset
+        offset += len(featureDimesntion[f])
+        
+
+    vectorizedData = []
+    for row in data:
+        features = []
+        for index in row:
+            indexFeatures = []
+            for f in featureDimesntion:
+                if f not in index:
+                    continue
+                
+                v = index[f]
+                indexFeatures.append(offsets[f] + featureDimesntion[f][v])
+            
+            # transform to sparse vector 
+            indexFeatures = scipy.sparse.coo_matrix(([1]*len(indexFeatures), ([0]*len(indexFeatures), indexFeatures)), shape=(1, offset), dtype=np.float32).T
+            features.append(indexFeatures)
+
+        vectorizedData.append(features)
+
+    return vectorizedData
+
+            
+
+def trainPosTagger():
+    tagged_sentences = nltk.corpus.treebank.tagged_sents()
+    # Split the dataset for training and testing
+    cutoff = int(.75 * len(tagged_sentences))
+    training_sentences = tagged_sentences[:cutoff]
+    test_sentences = tagged_sentences[cutoff:]
+    
+    def transform_to_dataset(tagged_sentences):
+        X, y = [], []
+    
+        for tagged in tagged_sentences:
+            X.append([features(untag(tagged), index) for index in range(len(tagged))])
+            y.append([tag for _, tag in tagged])
+    
+        return X, y
+    
+    X_train, y_train = transform_to_dataset(training_sentences)
+    X_test, y_test = transform_to_dataset(test_sentences)
+
+    X_train_vec = vectorizer(X_train)
+
+    pass
+
+
 
 
 
 if __name__ == '__main__':
-    c = LinearCRF(3, 3)
-    while True:
-        l = c.learn([1,2,3], [[1,0,0],[0,1,0],[0,0,1]])
-        if l > -1e-2:
-            break
-
-
-
-
-        
-            
-
-
-
-
-
-    
-
-
-        
-
-
-    
+    trainPosTagger()
