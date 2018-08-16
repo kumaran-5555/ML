@@ -17,17 +17,17 @@ class LinearCRF:
         self.n = nClasses + 1
 
         # one row for each pair of states
-        self.edgeWieghts = np.random.normal(size=(self.n, self.n, 1, self.d), scale=0.1)
-
+        #self.edgeWieghts = np.random.normal(size=(self.n, self.n, 1, self.d), scale=0.1)
+        self.edgeWieghts = np.zeros((self.n, self.n, 1, self.d), dtype=np.float32)
         # one row for each state
-        self.classWeights = np.random.normal(size=(self.n, 1, self.d), scale=0.1)
+        #self.classWeights = np.random.normal(size=(self.n, 1, self.d), scale=0.1)
+        self.classWeights = np.zeros((self.n, 1, self.d), dtype=np.float32)
         self.alpha = None
         self.beta = None
         self.fiCache = {}
         
         self.gE = np.zeros_like(self.edgeWieghts)
         self.gW = np.zeros_like(self.classWeights)
-
 
     @staticmethod
     def dot(w, x):
@@ -63,6 +63,14 @@ class LinearCRF:
             w[0][x.row[i] ] += (x.data[i])
 
 
+    @staticmethod
+    def logsumexp(a):
+        b = a.max()
+        return b + np.log((np.exp(a-b)).sum())
+
+
+
+
 
 
 
@@ -75,25 +83,20 @@ class LinearCRF:
                 score = self.fi(0, labels[i], i, features)
                 continue
 
-            score *= self.fi(labels[i-1], labels[i], i, features)
+            score += self.fi(labels[i-1], labels[i], i, features)
         return score
 
     def pOfYGivenX(self, labels, features):
         scoreOfYGivenX = self.score(labels, features)
         ZOfX = self.ZOfX(features)
-        if (scoreOfYGivenX - ZOfX) > 1e-2:
-            scoreOfYGivenX = self.score(labels, features)
-            self.forwardBackward(features)
+        if scoreOfYGivenX > ZOfX:
             raise ValueError
-        return scoreOfYGivenX / ZOfX
+        return scoreOfYGivenX - ZOfX
 
     def ZOfX(self, features):                
         m = len(features)-1
         # consider all possible ending states for alpha table
-        score = 0.0
-        for s in range(1, self.n):
-            score += self.alpha[s, m]                
-        return score
+        return LinearCRF.logsumexp(self.alpha[1:,m])
 
     
     def forwardBackward(self, features):
@@ -104,15 +107,23 @@ class LinearCRF:
         # aplha[i, j] = sum of liklyhood of subseq [0...i] having label seq 
         # ending with state j        
         self.alpha = np.zeros((self.n, m+1))
-        self.alpha[0, 0] = 1 
+        self.alpha[0, 0] = 0
         
         for i in range(1, m+1):
             for s in range(1, self.n):
                 if i == 1:
-                    self.alpha[s, i] += self.alpha[0, i-1] * self.fi(0, s, i, features)
+                    self.alpha[s, i] += self.alpha[0, i-1] + self.fi(0, s, i, features)
                     continue
+                    
+                # when we have to sum across sequences, we need to go to exp space
+                # for each sequence and apply sum in the exp space and come back to log space
+                # log(p1 + p2 + p3) is what we want from logP1, logP2, logP3
+                # log(p1 + p2 + p3) = log(exp(logP1) + exp(logP2) + exp(logP3))
+                
                 for _s in range(1, self.n):                    
-                    self.alpha[s, i] += self.alpha[_s, i-1] * self.fi(_s, s, i, features)
+                    self.alpha[s, i] += np.exp(self.alpha[_s, i-1] + self.fi(_s, s, i, features))
+                
+                self.alpha[s,i] = np.log(self.alpha[s,i])
                 
         # beta[i, j] = sum of likelyhood of subseq [i+1...m-1] having previous label j
 
@@ -123,30 +134,14 @@ class LinearCRF:
                 if i == m:
                     # last item in sequence it not going to be previous
                     # for any other subseq, intialize with 1 as noop for multiplication
-                    self.beta[s, i] = 1
+                    self.beta[s, i] = 0
                     continue
                 
                 for _s in range(1, self.n):
                     # k tracks (current) state at position i+1, j tracks (prev) state i
-                    self.beta[s, i] += self.beta[_s, i+1] * self.fi(s, _s, i+1, features)
+                    self.beta[s, i] += np.exp(self.beta[_s, i+1] + self.fi(s, _s, i+1, features))
 
-        
-
-        '''
-        aZOfXScore = 0.0
-        bZOfXScore = 0.0
-
-        for s in range(1, self.n):
-            aZOfXScore += self.alpha[s, m]
-
-        for s in range(1, self.n):
-            bZOfXScore += (self.beta[s, 1]  * self.fi(0, s, 1, features))
-        
-        if abs(aZOfXScore-bZOfXScore) > 0.1:
-            pass
-
-       '''
-
+                self.beta[s,i] = np.log(self.beta[s,i])
 
     def fi(self, prevY, y, i, features):
         key = (prevY, y, i)
@@ -155,21 +150,16 @@ class LinearCRF:
 
         x = features[i]
         
-        score = LinearCRF.dot(self.edgeWieghts[prevY, y], x) + LinearCRF.dot(self.classWeights[y], x)
-        score = np.exp(score)
-        if score >  500:
-            score = 500
-        elif score < 1e-5:
-            score = 1e-5
+        score = LinearCRF.dot(self.edgeWieghts[prevY, y], x) + LinearCRF.dot(self.classWeights[y], x)        
         self.fiCache[key] = score
         return score
 
 
 
     def loss(self, labels, features):
-        return np.log(self.pOfYGivenX(labels, features))
+        return self.pOfYGivenX(labels, features)
 
-    def learn(self, labels, features, learningRate=0.09, alpha=0.002):
+    def learn(self, labels, features, learningRate=0.15, alpha=0.002):
         # add dummy place holders to make the indcies from 1...m
         # add a dummy rows to label and features
         labels = [None] + labels
@@ -197,7 +187,7 @@ class LinearCRF:
         
         
         l = self.loss(labels, features)
-        p = self.pOfYGivenX(labels, features)
+        p = np.exp(self.pOfYGivenX(labels, features))
         z = self.ZOfX(features)
         print(l, p, z)
 
@@ -226,7 +216,7 @@ class LinearCRF:
             if i==1:
                 a = 0
                 for b in range(1, self.n):
-                    q_i_a_b = (self.alpha[a, i-1] * self.fi(a, b, i, features) * self.beta[b, i])  / ZOfXScore
+                    q_i_a_b = -1 * np.exp((self.alpha[a, i-1] + self.fi(a, b, i, features) + self.beta[b, i])  - ZOfXScore)
                     LinearCRF.sumMul(self.gW[b], features[i], q_i_a_b)
                     LinearCRF.sumMul(self.gE[a, b], features[i], q_i_a_b)
                 continue
@@ -234,7 +224,7 @@ class LinearCRF:
             for a in range(1, self.n):                
                 for b in range(1, self.n):                    
                     
-                    q_i_a_b = (self.alpha[a, i-1] * self.fi(a, b, i, features) * self.beta[b, i])  / ZOfXScore
+                    q_i_a_b = -1 * np.exp((self.alpha[a, i-1] + self.fi(a, b, i, features) + self.beta[b, i])  - ZOfXScore)
                     
                     LinearCRF.sumMul(self.gW[b], features[i], q_i_a_b)
                     
@@ -251,23 +241,23 @@ class LinearCRF:
 def features(sentence, index):
     """ sentence: [w1, w2, ...], index: the index of the word """
     return {
-        #'word': sentence[index],
-        'is_first': index == 0,
-        'is_last': index == len(sentence) - 1,
-        'is_capitalized': sentence[index][0].upper() == sentence[index][0],
-        'is_all_caps': sentence[index].upper() == sentence[index],
-        'is_all_lower': sentence[index].lower() == sentence[index],
-        'prefix-1': sentence[index][0],
-        'prefix-2': sentence[index][:2],
+        'word': sentence[index],
+        #'is_first': index == 0,
+        #'is_last': index == len(sentence) - 1,
+        #'is_capitalized': sentence[index][0].upper() == sentence[index][0],
+        #'is_all_caps': sentence[index].upper() == sentence[index],
+        #'is_all_lower': sentence[index].lower() == sentence[index],
+        #'prefix-1': sentence[index][0],
+        #'prefix-2': sentence[index][:2],
         #'prefix-3': sentence[index][:3],
-        'suffix-1': sentence[index][-1],
-        'suffix-2': sentence[index][-2:],
+        #'suffix-1': sentence[index][-1],
+        #'suffix-2': sentence[index][-2:],
         #'suffix-3': sentence[index][-3:],
-        'prev_word': '' if index == 0 else sentence[index - 1],
-        'next_word': '' if index == len(sentence) - 1 else sentence[index + 1],
-        'has_hyphen': '-' in sentence[index],
-        'is_numeric': sentence[index].isdigit(),
-        'capitals_inside': sentence[index][1:].lower() != sentence[index][1:]
+        #'prev_word': '' if index == 0 else sentence[index - 1],
+        #'next_word': '' if index == len(sentence) - 1 else sentence[index + 1],
+        #'has_hyphen': '-' in sentence[index],
+        #'is_numeric': sentence[index].isdigit(),
+        #'capitals_inside': sentence[index][1:].lower() != sentence[index][1:]
     }
 
 def vectorizeLabels(labels):
@@ -337,8 +327,8 @@ def vectorizeFeatures(data):
 
 def trainPosTagger():
 
-
-    if not os.path.exists(r'E:\Temp\treebank.pkl'):
+    fileName = r'E:\Temp\treebank.pkl'
+    if not os.path.exists(fileName):
         tagged_sentences = nltk.corpus.treebank.tagged_sents()
         # Split the dataset for training and testing        
         
@@ -356,10 +346,10 @@ def trainPosTagger():
         x, d = vectorizeFeatures(x)
         y, nClasses = vectorizeLabels(y)
         
-        pickle.dump((x,y,d,nClasses), open(r'E:\Temp\treebank.pkl', 'wb'))
+        pickle.dump((x,y,d,nClasses), open(fileName, 'wb'))
 
     else:
-        x, y, d, nClasses = pickle.load(open(r'E:\Temp\treebank.pkl', 'rb'))
+        x, y, d, nClasses = pickle.load(open(fileName, 'rb'))
 
     cutoff = int(.75 * len(x))
     xTrain = x[:cutoff]
@@ -372,8 +362,7 @@ def trainPosTagger():
     
     while True:
         i = np.random.choice(nSamples, 1)[0]
-        i = 0
-        loss = crf.learn(yTrain[i], xTrain[i])
+        loss = crf.learn(yTrain[i], xTrain[i], learningRate=0.01)
 
 
 
@@ -382,3 +371,12 @@ def trainPosTagger():
 
 if __name__ == '__main__':
     trainPosTagger()
+    c = LinearCRF(3, 3)
+
+    features = []
+    labels = [1,2,3]
+    for l in labels:
+        features.append( scipy.sparse.coo_matrix(([1], ([0], [l-1])), shape=(1, 3), dtype=np.float32).T)
+
+    while True:
+        c.learn(labels, features)
