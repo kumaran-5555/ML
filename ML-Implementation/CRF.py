@@ -1,3 +1,4 @@
+import math
 import numpy as np 
 import sys
 import os
@@ -24,66 +25,65 @@ class LinearCRF:
         self.classWeights = np.zeros((self.n, 1, self.d), dtype=np.float32)
         self.alpha = None
         self.beta = None
+        self.scores = None
         self.fiCache = {}
+        self.sampleInCurrentBatch = 0
         
         self.gE = np.zeros_like(self.edgeWieghts)
         self.gW = np.zeros_like(self.classWeights)
 
     @staticmethod
     def dot(w, x):
-        if w.shape[1] != x.shape[0]:
-            raise ValueError('Dimension mismatch w {} x {}', w.shape, x.shape)
-
-        score = 0.0
-        for i in range(len(x.row)):      
-            score +=  w[0][x.row[i]] * x.data[i]
-        return score
-
+        return np.sum(w[0][x.row])
+        
     @staticmethod
     def sum(w, x):
-        if w.shape[1] != x.shape[1]:
-            raise ValueError('Dimension mismatch w {} x {}', w.shape, x.shape)
-        for i in range(len(x.col)):
-            w[0][x.col[i] ] += x.data[i]
+        w[0][x.col] +=  x.data
 
     @staticmethod
     def sumMul(w, x, c):
-        if w.shape[1] != x.shape[0]:
-            raise ValueError('Dimension mismatch w {} x {}', w.shape, x.shape)
+        w[0][x.row] = np.add(w[0][x.row], c)
 
-        for i in range(len(x.row)): 
-            w[0][x.row[i] ] += (x.data[i] * c)
-    
     @staticmethod
     def sum2(w, x):
-        if w.shape[1] != x.shape[0]:
-            raise ValueError('Dimension mismatch w {} x {}', w.shape, x.shape)
-
-        for i in range(len(x.row)): 
-            w[0][x.row[i] ] += (x.data[i])
-
+        w[0][x.row] += x.data
 
     @staticmethod
     def logsumexp(a):
         b = a.max()
         return b + np.log((np.exp(a-b)).sum())
 
+    def potentials(self, labels, features):
+        m = len(labels)-1
+        self.scores = np.zeros((m+1, self.n, self.n), dtype=np.float32)
+        for i in range(1, m+1):
+            if i == 1:
+                a = 0
+                for b in range(1, self.n):
+                    self.scores[i, a, b] = self.fi(a, b, i, features)
+                continue
+
+            for a in range(1, self.n):
+                for b in range(1, self.n):
+                    self.scores[i, a, b] = self.fi(a, b, i, features)
+
+        return
+
+                
 
 
 
 
 
-
-    def score(self, labels, features):
-        
+    def score(self, labels, features):        
         m = len(labels)-1
         score = 0.0
         for i in range(1, m+1):
             if i==1:
-                score = self.fi(0, labels[i], i, features)
+                score = self.scores[i, 0, labels[i]]
                 continue
 
-            score += self.fi(labels[i-1], labels[i], i, features)
+            score += self.scores[i, labels[i-1], labels[i]]
         return score
 
     def pOfYGivenX(self, labels, features):
@@ -112,18 +112,14 @@ class LinearCRF:
         for i in range(1, m+1):
             for s in range(1, self.n):
                 if i == 1:
-                    self.alpha[s, i] += self.alpha[0, i-1] + self.fi(0, s, i, features)
+                    self.alpha[s, i] = self.scores[i, 0, s]
                     continue
                     
                 # when we have to sum across sequences, we need to go to exp space
                 # for each sequence and apply sum in the exp space and come back to log space
                 # log(p1 + p2 + p3) is what we want from logP1, logP2, logP3
                 # log(p1 + p2 + p3) = log(exp(logP1) + exp(logP2) + exp(logP3))
-                
-                for _s in range(1, self.n):                    
-                    self.alpha[s, i] += np.exp(self.alpha[_s, i-1] + self.fi(_s, s, i, features))
-                
-                self.alpha[s,i] = np.log(self.alpha[s,i])
+                self.alpha[s, i] = LinearCRF.logsumexp(self.alpha[1:, i-1] + self.scores[i, 1:, s])
                 
         # beta[i, j] = sum of likelyhood of subseq [i+1...m-1] having previous label j
 
@@ -135,55 +131,42 @@ class LinearCRF:
                     # last item in sequence it not going to be previous
                     # for any other subseq, intialize with 1 as noop for multiplication
                     self.beta[s, i] = 0
-                    continue
-                
-                for _s in range(1, self.n):
-                    # k tracks (current) state at position i+1, j tracks (prev) state i
-                    self.beta[s, i] += np.exp(self.beta[_s, i+1] + self.fi(s, _s, i+1, features))
+                    continue                                
+                self.beta[s, i] = LinearCRF.logsumexp(self.beta[1:, i+1] + self.scores[i+1, s, 1:])
+                    
 
-                self.beta[s,i] = np.log(self.beta[s,i])
-
-    def fi(self, prevY, y, i, features):
-        key = (prevY, y, i)
-        if key in self.fiCache:
-            return self.fiCache[key]
-
-        x = features[i]
-        
-        score = LinearCRF.dot(self.edgeWieghts[prevY, y], x) + LinearCRF.dot(self.classWeights[y], x)        
-        self.fiCache[key] = score
+    def fi(self, prevY, y, i, features):        
+        x = features[i]        
+        score = LinearCRF.dot(self.edgeWieghts[prevY, y], x) + LinearCRF.dot(self.classWeights[y], x)
         return score
-
-
 
     def loss(self, labels, features):
         return self.pOfYGivenX(labels, features)
 
-    def learn(self, labels, features, learningRate=0.15, alpha=0.002):
+    def learn(self, labels, features, learningRate=0.15, alpha=0.002, batchSize = 5):
         # add dummy place holders to make the indcies from 1...m
         # add a dummy rows to label and features
         labels = [None] + labels
         features = [None] + features
-        self.alpha = None
-        self.beta = None
-        self.fiCache = {}
-        
 
+        self.potentials(labels, features)
         self.forwardBackward(features)
+        
 
+        self.sampleInCurrentBatch += 1
         
-        
-        self.gE *= 0.0
-        self.gW *= 0.0
-        
-        
-        
+        # initialize gradients with gradients of L2 regualization
+        if batchSize == 1:
+            self.gW = alpha * self.classWeights
+            self.gE = alpha * self.edgeWieghts
+        else:
+            self.gW += alpha * self.classWeights
+            self.gE += alpha * self.edgeWieghts       
+
         self.updateGradientForFirstTerm(labels, features)
-        
-        
         self.updateGradientForSecondTerm(features)
+        #self.updateGradientOfL2Penalty(alpha)
         
-        self.updateGradientOfL2Penalty(alpha)
         
         
         l = self.loss(labels, features)
@@ -191,12 +174,16 @@ class LinearCRF:
         z = self.ZOfX(features)
         print(l, p, z)
 
-        
-        # gradient descent        
-        self.edgeWieghts += (learningRate * self.gE)
-        self.classWeights += (learningRate * self.gW)
-        
+        # we will update weights only once per batch
+        if self.sampleInCurrentBatch == batchSize:
+            # gradient descent
+            np.add(self.edgeWieghts, (learningRate * self.gE), out=self.edgeWieghts)
+            np.add(self.classWeights, (learningRate * self.gW), out=self.classWeights)
+            if batchSize != 1:
+                self.gE.fill(0.0)
+                self.gW.fill(0.0)
 
+            self.sampleInCurrentBatch = 0
         return l
         
 
@@ -216,7 +203,7 @@ class LinearCRF:
             if i==1:
                 a = 0
                 for b in range(1, self.n):
-                    q_i_a_b = -1 * np.exp((self.alpha[a, i-1] + self.fi(a, b, i, features) + self.beta[b, i])  - ZOfXScore)
+                    q_i_a_b = -1 * np.exp((self.alpha[a, i-1] + self.scores[i, a, b] + self.beta[b, i])  - ZOfXScore)
                     LinearCRF.sumMul(self.gW[b], features[i], q_i_a_b)
                     LinearCRF.sumMul(self.gE[a, b], features[i], q_i_a_b)
                 continue
@@ -224,7 +211,7 @@ class LinearCRF:
             for a in range(1, self.n):                
                 for b in range(1, self.n):                    
                     
-                    q_i_a_b = -1 * np.exp((self.alpha[a, i-1] + self.fi(a, b, i, features) + self.beta[b, i])  - ZOfXScore)
+                    q_i_a_b = -1 * np.exp((self.alpha[a, i-1] + self.scores[i, a, b] + self.beta[b, i])  - ZOfXScore)
                     
                     LinearCRF.sumMul(self.gW[b], features[i], q_i_a_b)
                     
@@ -360,17 +347,19 @@ def trainPosTagger():
     crf = LinearCRF(nClasses, d)
     nSamples = len(xTrain)
     
-    while True:
-        i = np.random.choice(nSamples, 1)[0]
-        loss = crf.learn(yTrain[i], xTrain[i], learningRate=0.01)
-
-
-
-
+    for iter in range(1,20):
+        lr = 0.05 /math.sqrt(iter)
+        for i in range(nSamples):
+            loss = crf.learn(yTrain[i], xTrain[i], learningRate=lr, alpha=0.0002, batchSize=5)
+            
+            
+            
 
 
 if __name__ == '__main__':
     trainPosTagger()
+
+    exit(1)
     c = LinearCRF(3, 3)
 
     features = []
