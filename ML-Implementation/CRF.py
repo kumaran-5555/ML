@@ -17,16 +17,13 @@ class LinearCRF:
         self.d = featuresDimension
         self.n = nClasses + 1
 
-        # one row for each pair of states
-        #self.edgeWieghts = np.random.normal(size=(self.n, self.n, 1, self.d), scale=0.1)
+        # one row for each pair of states        
         self.edgeWieghts = np.zeros((self.n, self.n, 1, self.d), dtype=np.float32)
-        # one row for each state
-        #self.classWeights = np.random.normal(size=(self.n, 1, self.d), scale=0.1)
+        # one row for each state        
         self.classWeights = np.zeros((self.n, 1, self.d), dtype=np.float32)
         self.alpha = None
         self.beta = None
-        self.scores = None
-        self.fiCache = {}
+        self.scores = None        
         self.sampleInCurrentBatch = 0
         
         self.gE = np.zeros_like(self.edgeWieghts)
@@ -69,13 +66,8 @@ class LinearCRF:
 
         return
 
-                
 
-
-
-
-
-    def score(self, labels, features):        
+    def loglikelyhood(self, labels, features):        
         m = len(labels)-1
         score = 0.0
         for i in range(1, m+1):
@@ -86,14 +78,14 @@ class LinearCRF:
             score += self.scores[i, labels[i-1], labels[i]]
         return score
 
-    def pOfYGivenX(self, labels, features):
-        scoreOfYGivenX = self.score(labels, features)
-        ZOfX = self.ZOfX(features)
-        if scoreOfYGivenX > ZOfX:
+    def logProb(self, labels, features):
+        loglikelyhood = self.loglikelyhood(labels, features)
+        logz = self.logz(features)
+        if loglikelyhood > logz:
             raise ValueError
-        return scoreOfYGivenX - ZOfX
+        return loglikelyhood - logz
 
-    def ZOfX(self, features):                
+    def logz(self, features):                
         m = len(features)-1
         # consider all possible ending states for alpha table
         return LinearCRF.logsumexp(self.alpha[1:,m])
@@ -141,7 +133,7 @@ class LinearCRF:
         return score
 
     def loss(self, labels, features):
-        return self.pOfYGivenX(labels, features)
+        return self.logProb(labels, features)
 
     def learn(self, labels, features, learningRate=0.15, alpha=0.002, batchSize = 5):
         # add dummy place holders to make the indcies from 1...m
@@ -170,9 +162,8 @@ class LinearCRF:
         
         
         l = self.loss(labels, features)
-        p = np.exp(self.pOfYGivenX(labels, features))
-        z = self.ZOfX(features)
-        print(l, p, z)
+        p = np.exp(self.logProb(labels, features))
+        z = self.logz(features)
 
         # we will update weights only once per batch
         if self.sampleInCurrentBatch == batchSize:
@@ -184,7 +175,8 @@ class LinearCRF:
                 self.gW.fill(0.0)
 
             self.sampleInCurrentBatch = 0
-        return l
+        return l, p, z
+
         
 
     def updateGradientForFirstTerm(self, labels, features):
@@ -198,12 +190,12 @@ class LinearCRF:
 
     def updateGradientForSecondTerm(self, features):
         m = len(features) - 1        
-        ZOfXScore = self.ZOfX(features)
+        logz = self.logz(features)
         for i in range(1, m+1):
             if i==1:
                 a = 0
                 for b in range(1, self.n):
-                    q_i_a_b = -1 * np.exp((self.alpha[a, i-1] + self.scores[i, a, b] + self.beta[b, i])  - ZOfXScore)
+                    q_i_a_b = -1 * np.exp((self.alpha[a, i-1] + self.scores[i, a, b] + self.beta[b, i])  - logz)
                     LinearCRF.sumMul(self.gW[b], features[i], q_i_a_b)
                     LinearCRF.sumMul(self.gE[a, b], features[i], q_i_a_b)
                 continue
@@ -211,7 +203,7 @@ class LinearCRF:
             for a in range(1, self.n):                
                 for b in range(1, self.n):                    
                     
-                    q_i_a_b = -1 * np.exp((self.alpha[a, i-1] + self.scores[i, a, b] + self.beta[b, i])  - ZOfXScore)
+                    q_i_a_b = -1 * np.exp((self.alpha[a, i-1] + self.scores[i, a, b] + self.beta[b, i])  - logz)
                     
                     LinearCRF.sumMul(self.gW[b], features[i], q_i_a_b)
                     
@@ -223,29 +215,36 @@ class LinearCRF:
         self.gW += alpha * self.classWeights
         self.gE += alpha * self.edgeWieghts
 
+    def save(self, modelFile):
+        pickle.dump((self.classWeights, self.edgeWieghts), open(modelFile, 'wb'))
+
+    def load(self, modelFile):
+        self.classWeights, self.edgeWieghts = pickle.load(open(modelFile, 'rb'))
+    
+
 
 # we will use features from  https://nlpforhackers.io/crf-pos-tagger/
 def features(sentence, index):
     """ sentence: [w1, w2, ...], index: the index of the word """
     return {
         'word': sentence[index],
-        #'is_first': index == 0,
-        #'is_last': index == len(sentence) - 1,
-        #'is_capitalized': sentence[index][0].upper() == sentence[index][0],
-        #'is_all_caps': sentence[index].upper() == sentence[index],
-        #'is_all_lower': sentence[index].lower() == sentence[index],
-        #'prefix-1': sentence[index][0],
-        #'prefix-2': sentence[index][:2],
-        #'prefix-3': sentence[index][:3],
-        #'suffix-1': sentence[index][-1],
-        #'suffix-2': sentence[index][-2:],
-        #'suffix-3': sentence[index][-3:],
-        #'prev_word': '' if index == 0 else sentence[index - 1],
-        #'next_word': '' if index == len(sentence) - 1 else sentence[index + 1],
-        #'has_hyphen': '-' in sentence[index],
-        #'is_numeric': sentence[index].isdigit(),
-        #'capitals_inside': sentence[index][1:].lower() != sentence[index][1:]
-    }
+        'is_first': index == 0,
+        'is_last': index == len(sentence) - 1,
+        'is_capitalized': sentence[index][0].upper() == sentence[index][0],
+        'is_all_caps': sentence[index].upper() == sentence[index],
+        'is_all_lower': sentence[index].lower() == sentence[index],
+        'prefix-1': sentence[index][0],
+        'prefix-2': sentence[index][:2],
+        'prefix-3': sentence[index][:3],
+        'suffix-1': sentence[index][-1],
+        'suffix-2': sentence[index][-2:],
+        'suffix-3': sentence[index][-3:],
+        'prev_word': '' if index == 0 else sentence[index - 1],
+        'next_word': '' if index == len(sentence) - 1 else sentence[index + 1],
+        'has_hyphen': '-' in sentence[index],
+        'is_numeric': sentence[index].isdigit(),
+        'capitals_inside': sentence[index][1:].lower() != sentence[index][1:]
+        }
 
 def vectorizeLabels(labels):
     labelNames = {}
@@ -314,7 +313,7 @@ def vectorizeFeatures(data):
 
 def trainPosTagger():
 
-    fileName = r'E:\Temp\treebank.pkl'
+    fileName = r'E:\Temp\treebankAll.pkl'
     if not os.path.exists(fileName):
         tagged_sentences = nltk.corpus.treebank.tagged_sents()
         # Split the dataset for training and testing        
@@ -347,10 +346,19 @@ def trainPosTagger():
     crf = LinearCRF(nClasses, d)
     nSamples = len(xTrain)
     
-    for iter in range(1,20):
+    for iter in range(1,40):
         lr = 0.05 /math.sqrt(iter)
+        avgMetrics = [0.0, 0.0, 0.0]
         for i in range(nSamples):
-            loss = crf.learn(yTrain[i], xTrain[i], learningRate=lr, alpha=0.0002, batchSize=5)
+            if i > 0 and i % 20 == 0:
+                print('Iter {} i {} Average loss {} prob {}'.format(iter, i, avgMetrics[0]/i, avgMetrics[1]/i))
+            l, p, z = crf.learn(yTrain[i], xTrain[i], learningRate=lr, alpha=0.0002, batchSize=5)
+            avgMetrics[0] += l
+            avgMetrics[1] += p
+
+            
+            
+    crf.save(fileName + '.bin')
             
             
             
